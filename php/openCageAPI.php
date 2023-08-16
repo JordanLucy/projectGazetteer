@@ -2,7 +2,7 @@
 
     $executionStartTime = microtime(true);
 
-    $url = '';
+    $url = 'https://api.opencagedata.com/geocode/v1/json?q=' . $_REQUEST['lat'] . '+' . $_REQUEST['lng'] . '&key=be0aa5008ed74764a77721198258cbbb';
 
     $ch = curl_init($url);
 

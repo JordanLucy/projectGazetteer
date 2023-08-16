@@ -108,9 +108,9 @@ markers.addLayer(L.marker([175.3107, -37.7784]));
 
 map.addLayer(markers);*/
 
-//Country Dropdown List ---------------------------------------------------------------------------------------------------------------------------------------
+//Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-$(() => {
+$(document).ready(() => {
   // this will run when page loads
   fetchAndPopulateCountryList();
 });
@@ -125,23 +125,68 @@ const fetchAndPopulateCountryList = async () => {
 
 const fetchCountryList = async () => {
   try {
-    const response = await fetch("../php/countryController.php");
+    const response = await fetch(
+      "http://localhost/projectGazetteer/php/countryController.php"
+    );
     const data = await response.json();
-    console.log(data);
-    return data;
+
+    if (data.status.code === "200" && data.data) {
+      return data.data;
+    } else {
+      throw new Error("Unable to fetch country list");
+    }
   } catch (error) {
-    return { countryName: "Could not find countries" };
-    console.log("Error: ", error);
+    console.error("Error fetching country list:", error);
+    return [];
   }
 };
 
 const populateCountryList = (data) => {
-  const countryList = document.querySelector("#countryList");
-  countryList.innerHTML = data
-    .map((el, i) => {
-      return `<option value="${el.isoCode}" id="countryListOption-${i}">${el.countryName}</option>`;
+  data.sort((a, b) => a.countryName.localeCompare(b.countryName));
+
+  $("#countryList").html(
+    $.map(data, (feature, i) => {
+      return `<option value="${feature.iso_a2}" id="countryListOption-${i}">${feature.countryName}</option>`;
     })
-    .join("");
+  );
+};
+
+//Country Border -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+$(document).ready(() => {
+  $("#countryList").on("change", function () {
+    const selectedCountry = $(this).val();
+    if (selectedCountry) {
+      fetchCountryBorder(selectedCountry);
+    } else {
+      clearSelectedCountryBorder();
+    }
+  });
+});
+
+const fetchCountryBorder = async (isoCode) => {
+  try {
+    const response = await fetch(
+      `http://localhost/projectGazetteer/php/countryBorder.php?iso=${isoCode}`
+    );
+    const borderData = await response.json();
+    selectedCountryBorder = L.geoJSON(borderData, {
+      style: {
+        color: "green",
+        weight: 2,
+        opacity: 1,
+      },
+    }).addTo(map);
+  } catch (error) {
+    console.log("Error fetching country border", error);
+  }
+};
+
+const clearSelectedCountryBorder = () => {
+  if (selectedCountryBorder) {
+    map.removeLayer(selectedCountryBorder);
+    selectedCountryBorder = null;
+  }
 };
 
 // Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
