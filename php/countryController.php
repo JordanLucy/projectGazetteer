@@ -33,7 +33,14 @@ class CountryController
 
     private function fetchAllCountryCodes()
     {
-        return $this->data;
+        $outputData = array();
+
+        foreach ($this->data['features'] as $feature) {
+            $countryName = $feature['properties']['name'];
+            $isoCode = $feature['properties']['iso_a2'];
+            $outputData[] = array('countryName' => $countryName, 'isoCode' => $isoCode);
+        }
+        return $outputData;
     }
 
     private function returnData($data)
@@ -43,7 +50,7 @@ class CountryController
         $output['status']['description'] = "success";
         $output['data'] = $data;
         
-        header('Content-Type: application/json; charset=URF-8');
+        header('Content-Type: application/json; charset=UTF-8');
 
         echo json_encode($output);
     }

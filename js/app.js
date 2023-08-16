@@ -1,17 +1,14 @@
 var countryBorder;
 
-// Map JavasScript ------------------------------------------------------------------------------------------------------------------------------
-//Map Initialization
+// Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
 var map = L.map("map").setView([53.4084, -2.9916], 13);
 
-//Map tileLayer
 var mapTile = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution:
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
-//Map Topography layer
 var topographyMap = L.tileLayer(
   "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
   {
@@ -21,7 +18,6 @@ var topographyMap = L.tileLayer(
   }
 );
 
-//Map Google Hybrid
 googleHybrid = L.tileLayer(
   "http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
   {
@@ -30,13 +26,11 @@ googleHybrid = L.tileLayer(
   }
 );
 
-//Map Google Sat
 googleSat = L.tileLayer("http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
   maxZoom: 20,
   subdomains: ["mt0", "mt1", "mt2", "mt3"],
 });
 
-//Map Nat Geo
 var Esri_NatGeoWorldMap = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
   {
@@ -63,7 +57,7 @@ var overlayMaps = {
 
 var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-//Geolocation of user -----------------------------------------------------------------
+//Geolocation of user -----------------------------------------------------------------------------------------------------------------------------
 
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
@@ -93,7 +87,7 @@ function errorFunction() {
   console.log("Unable to retrieve your location");
 }
 
-// Create Country Border
+// Create Country Border -------------------------------------------------------------------------------------------------------------------------------------
 
 //Markers On Click
 
@@ -114,7 +108,7 @@ markers.addLayer(L.marker([175.3107, -37.7784]));
 
 map.addLayer(markers);*/
 
-//Countries List ---------------------------------------------------------------------------------------------------------------------------------------
+//Country Dropdown List ---------------------------------------------------------------------------------------------------------------------------------------
 
 $(() => {
   // this will run when page loads
@@ -131,9 +125,7 @@ const fetchAndPopulateCountryList = async () => {
 
 const fetchCountryList = async () => {
   try {
-    const response = await fetch(
-      "C:/xampp/htdocs/projectGazetteer/php/countryController.php"
-    );
+    const response = await fetch("../php/countryController.php");
     const data = await response.json();
     console.log(data);
     return data;
@@ -144,9 +136,12 @@ const fetchCountryList = async () => {
 };
 
 const populateCountryList = (data) => {
-  $("#countryList").innerHTML = $.map(data, (el, i) => {
-    return `<option value="${el.iso_a2}" id="countryListOption-${i}">${el.countryName}}</option>`;
-  });
+  const countryList = document.querySelector("#countryList");
+  countryList.innerHTML = data
+    .map((el, i) => {
+      return `<option value="${el.isoCode}" id="countryListOption-${i}">${el.countryName}</option>`;
+    })
+    .join("");
 };
 
 // Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
