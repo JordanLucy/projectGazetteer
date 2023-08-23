@@ -243,24 +243,24 @@ L.easyButton("<span>🌤</span>", function () {
 
   function displayWeatherInfo(data) {
     console.log(data);
-    const celcius = Math.round(parseFloat(data.current.temp) - 273.15);
+    const celcius = Math.round(parseFloat(data.weather.current.temp) - 273.15);
     const fehrenheit = Math.round(
-      (parseFloat(data.main.temp) - 273.15) * 1.8 + 32
+      (parseFloat(data.weather.current.temp) - 273.15) * 1.8 + 32
     );
     const sunriseTime = new Date(
-      data.current.sunrise * 1000
+      data.weather.current.sunrise * 1000
     ).toLocaleTimeString();
     const sunsetTime = new Date(
-      data.current.sunset * 1000
+      data.weather.current.sunset * 1000
     ).toLocaleTimeString();
 
     document.getElementById("tempInfo").innerHTML = celcius + "&deg;";
     document.getElementById("sunriseInfo").innerHTML = sunriseTime;
     document.getElementById("sunsetInfo").innerHTML = sunsetTime;
     document.getElementById("windspeedInfo").innerHTML =
-      data.current.wind_speed;
+      data.weather.current.wind_speed;
     document.getElementById("currentWeatherConditions").innerHTML =
-      data.current.weather[0].description;
+      data.weather.current.weather[0].description;
   }
 
   returnWeatherInfo();
