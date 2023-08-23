@@ -1,4 +1,8 @@
 var countryBorder;
+var selectedCountryBorder;
+var currentCountryIso = null;
+
+var popup = L.popup();
 
 // Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
 var map = L.map("map").setView([53.4084, -2.9916], 13);
@@ -64,30 +68,56 @@ if (navigator.geolocation) {
 } else {
   console.log("Gelocation is not supported by this browser.");
 }
-function successFunction(position) {
-  console.log(position);
-  map.locate({ setView: true, maxZoom: 16 });
 
-  function onLocationFound(e) {
-    var radius = e.accuracy;
+async function successFunction(position) {
+  var latitude = position.coords.latitude;
+  var longitude = position.coords.longitude;
 
-    L.marker(e.latlng)
+  try {
+    // Using openCage API
+    var apiKey = "be0aa5008ed74764a77721198258cbbb";
+    var apiUrl = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
+
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    var countryIso = data.results[0].components["ISO_3166-1_apha-2"];
+
+    // Update currentCountryIso
+    currentCountryIso = countryIso;
+
+    //Update the Select Dropdown
+    var selectDropDown = document.getElementById("countryList");
+    for (var i = 0; i < selectDropDown.options.length; i++) {
+      if (selectDropDown.options[i].value === countryIso) {
+        selectDropDown.selectedIndex = i;
+        break;
+      }
+    }
+
+    //Set the map view to user's location
+    map.setView([latitude, longitude], 16);
+
+    //Create LatLng object
+    var userLatLng = L.latLng(latitude, longitude);
+
+    //Add marker and circle for user's location
+    var radius = position.coords.accuracy;
+    L.marker([latitude, longitude])
       .addTo(map)
       .bindPopup(
         "You are within " + Math.floor(radius) + " meters from this point"
       )
       .openPopup();
-
-    L.circle(e.latlng, radius).addTo(map);
+    L.circle(userLatLng, { radius: radius }).addTo(map);
+  } catch (error) {
+    console.log("Error fetching reverse geocoding data", error);
   }
-
-  map.on("locationfound", onLocationFound);
 }
+
 function errorFunction() {
   console.log("Unable to retrieve your location");
 }
-
-// Create Country Border -------------------------------------------------------------------------------------------------------------------------------------
 
 //Markers On Click
 
@@ -99,14 +129,6 @@ function onMapClick(e) {
 }
 
 map.on("click", onMapClick);
-
-//Multiple markers
-/*
-var markers = new L.MarkerClusterGroup();
-
-markers.addLayer(L.marker([175.3107, -37.7784]));
-
-map.addLayer(markers);*/
 
 //Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -151,77 +173,154 @@ const populateCountryList = (data) => {
   );
 };
 
-//Country Border -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// Create and target Country Border -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 $(document).ready(() => {
-  $("#countryList").on("change", function () {
-    const selectedCountry = $(this).val();
-    if (selectedCountry) {
-      fetchCountryBorder(selectedCountry);
+  $("#countryList").on("change", async function () {
+    const selectedCountryIso = $(this).val();
+    if (selectedCountryIso) {
+      //Fetch country border data and display on map
+      const borderData = await fetchCountryBorder(selectedCountryIso);
+      if (borderData) {
+        //Calculate the center of the countrys border
+        const countryBorder = L.geoJSON(borderData);
+        const countryCenter = countryBorder.getBounds().getCenter();
+
+        //Clear previous country border if exists
+        clearSelectedCountryBorder();
+
+        //Set the map's view to the country's center as defined above.
+        map.setView(countryCenter, 5);
+
+        //Display the country border on the map as a layer
+        selectedCountryBorder = L.geoJSON(borderData, {
+          style: {
+            color: "green",
+            weight: 2,
+            opacity: 0.5,
+          },
+        }).addTo(map);
+      }
+      //Fetch weather data based on the selected country's lat and long
+      const countryData = await fetchCountryBorder(selectedCountryIso);
+      if (countryData) {
+        //Display weather info in modal overlay
+        displayWeatherInfo(countryData);
+      }
     } else {
       clearSelectedCountryBorder();
     }
   });
 });
 
-const fetchCountryBorder = async (isoCode) => {
+//Function to fetch country border
+async function fetchCountryBorder(isoCode) {
   try {
     const response = await fetch(
       `http://localhost/projectGazetteer/php/countryBorder.php?iso=${isoCode}`
     );
     const borderData = await response.json();
-    selectedCountryBorder = L.geoJSON(borderData, {
-      style: {
-        color: "green",
-        weight: 2,
-        opacity: 1,
-      },
-    }).addTo(map);
+    return borderData;
   } catch (error) {
     console.log("Error fetching country border", error);
+    return null;
   }
-};
+}
 
-const clearSelectedCountryBorder = () => {
+//Function to fetch weather data
+async function fetchCountry(selectedCountryIso) {
+  try {
+    const response = await fetch(
+      `http://localhost/projectGazetteer/php/countryInfo.php?iso=${selectedCountryIso}`
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.log("Error fetching counrty data", error);
+    return null;
+  }
+}
+
+//function to display weather information
+
+function clearSelectedCountryBorder() {
   if (selectedCountryBorder) {
     map.removeLayer(selectedCountryBorder);
     selectedCountryBorder = null;
   }
-};
+}
 
 // Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
-L.easyButton('<img src="./icons/weather_icon.png">', function () {
-  async function returnWeatherInfo() {
-    try {
-      const key = "78c766e3970675bb23047dc7723a57da";
-      const response = await fetch(
-        "https://api.openweathermap.org/data/2.5/weather?q=Liverpool,UK&appid=" +
-          key
-      );
-      const data = await response.json();
-      displayWeatherInfo(data);
-      console.log(data);
-    } catch (error) {
-      console.log("Error: ", error);
+L.easyButton("<span>🌤</span>", async function () {
+  const selectedCountryIso = $("#countryList").val();
+  if (selectedCountryIso) {
+    const countryData = await fetchCountry(selectedCountryIso);
+
+    //Check if the countryData has the lat an long info
+    if (countryData.latitude && countryData.longitude) {
+      try {
+        const response = await fetch(
+          "http://localhost/projectGazetteer/php/weatherAPI.php?lat=${countryData.latitude}$lon=${countryData.longitude}"
+        );
+        const data = await response.json();
+        displayWeatherInfo(data);
+        console.log(data);
+      } catch (error) {
+        console.log("Error: ", error);
+      }
+    } else {
+      console.log("Latitude and longitude not available for selected country");
     }
   }
+}).addTo(map);
 
-  function displayWeatherInfo(data) {
-    console.log(data);
-    const celcius = Math.round(parseFloat(data.main.temp) - 273.15);
-    const fehrenheit = Math.round(
-      (parseFloat(data.main.temp) - 273.15) * 1.8 + 32
-    );
+async function displayWeatherInfo(data) {
+  try {
+    const celcius = Math.round(parseFloat(data.current.temp) - 273.15);
+    const sunriseTime = new Date(
+      data.current.sunrise * 1000
+    ).toLocaleTimeString();
+    const sunsetTime = new Date(
+      data.current.sunset * 1000
+    ).toLocaleTimeString();
 
     document.getElementById("tempInfo").innerHTML = celcius + "&deg;";
-    document.getElementById("sunriseInfo").innerHTML = data.sys.sunrise;
-    document.getElementById("sunsetInfo").innerHTML = data.sys.sunset;
-    document.getElementById("windspeedInfo").innerHTML = data.wind.speed;
+    document.getElementById("sunriseInfo").innerHTML = sunriseTime;
+    document.getElementById("sunsetInfo").innerHTML = sunsetTime;
+    document.getElementById("windspeedInfo").innerHTML =
+      data.current.wind_speed;
     document.getElementById("currentWeatherConditions").innerHTML =
-      data.weather[0].description;
+      data.current.weather[0].description;
+
+    $("#weatherModal").modal("show");
+  } catch (error) {
+    console.log("Error, weather API not working", error);
   }
+}
 
-  returnWeatherInfo();
+// Exchange Rate Modal -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-  $("#weatherModal").modal("show");
+L.easyButton("<span>$</span>", async function () {
+  const selectedCountryIso = $("#countryList").val();
+
+  if (selectedCountryIso) {
+    try {
+      const response = await fetch(
+        "http://localhost/projectGazetteer/php/exchangeRates.php?currentCurrency=" +
+          selectedCountryIso
+      );
+      const result = await response.json();
+      const currentRate = result.data.rates;
+      const currencyName = selectedCountryIso;
+
+      document.getElementById("currencyName").innerHTML = currencyName;
+      document.getElementById("currencySymbol").innerHTML = "$";
+      document.getElementById("exchangeRate").innerHTML = isNaN(currentRate)
+        ? "Exchange Rate Not Found"
+        : currentRate.toFixed(2);
+      $("#currencyModal").modal("show");
+    } catch (error) {
+      console.log("Currency Error: ", error);
+    }
+  }
 }).addTo(map);

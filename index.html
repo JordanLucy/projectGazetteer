@@ -19,13 +19,13 @@
 <body>
 
     <header>
-        <nav class="navbar bg-secondary text-light">
+        <nav class="navbar navbar-brand bg-secondary text-light">
             <div class="container-left">
                 <h1>Gazetteer</h1>
 
                     <div id="verticalSpacing"></div>
 
-                    <label for="countryList">View Country</label>
+                    <label>View Country</label>
                     <select id="countryList" name="countryList">Dropdown</select>
             </div>
         </nav>
@@ -211,28 +211,28 @@
 
 <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
     <!--Currency Exchange modal API-->
-<button id="modalBtn">Open Currency Modal
-    <div class="modal-dialog">
+<div id="currencyModal" class="modal fade" tabindex="-1" aria-labelledby="currency-api" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="currency-api">Currency Exchange Information</h2>
 
             </div>
-            <div class="modal-body">
-                <table class="table">
+            <div class="modal-body short-modal">
+                <table id="currencyTable" class="table">
                     <!--Potential image-->
                     <tbody>
                         <tr>
                             <th scope="row">Currency Name:</th>
-                            <td></td>
+                            <td id="currencyName"></td>
                         </tr>
                         <tr>
                             <th scope="row">Symbol:</th>
-                            <td></td>
+                            <td id="currencySymbol"></td>
                         </tr>
                         <tr>
                             <th scope="row">Exchange rate:</th>
-                            <td></td>
+                            <td id="exchangeRate"></td>
                         </tr>
                     </tbody>
 
@@ -240,19 +240,19 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn">Close</button>
+                <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
             </div>
 
         </div>
     </div>
-</button>
-
+</div>
 <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
     <!--Hotel modal API-->
+<div id="hotelModal" class="modal fade" tabindex="-1" aria-labelledby="hotel-api" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="country-info-api">Hotel Information</h2>
+                <h2 class="modal-title" id="hotel-api">Hotel Information</h2>
 
             </div>
             <div class="modal-body">
@@ -295,6 +295,7 @@
 
         </div>
     </div>
+</div>
   <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
 
 <!--Leaftlet Scripts-->

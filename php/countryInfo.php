@@ -2,10 +2,9 @@
 
 $executionStartTime = microtime(true);
 
-$countryLatitude = $_REQUEST['lat'];
-$countryLongitude = $_REQUEST['lon'];
+$url = 'http://api.geonames.org/countryInfo?username=flightltd&style=full';
 
-$url = 'https://api.openweathermap.org/data/3.0/onecall?lat=' . $countryLatitude . '&lon=' . $countryLongitude . '&exclude=minutely,alerts&units=metric&appid=78c766e3970675bb23047dc7723a57da';
+$selectedCountryIso = $_REQUEST['iso'];
 
 $ch = curl_init($url);
 
@@ -22,10 +21,9 @@ $decode = json_decode($result, true);
 $output['status']['code'] = "200";
 $output['status']['name'] = "ok";
 $output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
 $output['data'] = $decode;
 
-header('Content-Type: application/json; charset=UTF-8');
+header('Content-Type: application/json; charset=URF-8');
 
 header("Access-Control-Allow-Origin: *");
 

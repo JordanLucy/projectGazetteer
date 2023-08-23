@@ -1,31 +1,35 @@
-<?php 
+<?php
 
-    $executionStartTime = microtime(true);
+$executionStartTime = microtime(true);
 
-    $url = 'https://openexchangerates.org/api/latest.json?app_id=2fe339a2d149470785e7b13471dd50d3';
+$url = 'https://openexchangerates.org/api/latest.json?app_id=2fe339a2d149470785e7b13471dd50d3';
 
-    $ch = curl_init($url);
+$ch = curl_init($url);
 
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_URL, $url);
 
-    $result = curl_exec($ch);
+$result = curl_exec($ch);
 
-    curl_close($ch);
+curl_close($ch);
 
-    $decode = json_decode($result, true);
+$exchangeRates = json_decode($result, true);
 
-    $output['status']['code'] = "200";
-    $output['status']['name'] = "ok";
-    $output['status']['description'] = "success";
-    $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-    $output['data'] = $decode;
+$currentCurrency = $_GET['currentCurrency'];
 
-    header('Content-Type: application/json; charset=URF-8');
+$output['status']['code'] = "200";
+$output['status']['name'] = "ok";
+$output['status']['description'] = "success";
+$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
 
-    header("Access-Control-Allow-Origin: *");
+if (isset($exchangeRates['rates'][$currentCurrency])) {
+    $output['data']['currentRate'] = $exchangeRates['rates'][$currentCurrency];
+} else {
+    $output['data']['currentRate'] = "Can't find that Currency Rate";
+}
 
-    echo json_encode($output);
+header('Content-Type: application/json; charset=URF-8');
+header("Access-Control-Allow-Origin: *");
 
-?>
+echo json_encode($output);

@@ -27,20 +27,20 @@ class CountryController
         return json_decode($data, true);
     }
 
-    // private function fetchCountryBorderOnIso($isoCode)
-    // {
-    //     $isoCode = $_GET['iso']; // Get the ISO code from the query parameter
-        
-        
-    //     foreach ($jsonData['features'] as $feature) {
-    //         if ($feature['properties']['iso_a2'] === $isoCode) {
-    //             $border = $feature['geometry'];
-    //             echo json_encode($border);
-    //             break;
-    //         }
-    //     }
-    //     return null; // Return Null if no matching ISO code is found
-    // }
+    private function fetchCountryBorderOnIso($isoCode)
+    {
+        $isoCode = $_GET['iso']; // Get the ISO code from the query parameter
+        $jsonData = $this->data;
+
+        foreach ($jsonData['features'] as $feature) {
+            if ($feature['properties']['iso_a2'] === $isoCode) {
+                $border = $feature['geometry'];
+                echo json_encode($border);
+                break;
+            }
+        }
+        return null; // Return Null if no matching ISO code is found
+    }
 
     private function fetchAllCountryCodes()
     {
