@@ -140,7 +140,7 @@ $(document).ready(() => {
 const fetchAndPopulateCountryList = async () => {
   // async call to new controller
   const countryListData = await fetchCountryList();
-  console.log(countryListData);
+  //console.log(countryListData);
   populateCountryList(countryListData);
   // loop data into select via id target
 };
@@ -177,10 +177,10 @@ const populateCountryList = (data) => {
 
 $(document).ready(() => {
   $("#countryList").on("change", async function () {
-    const selectedCountryIso = $(this).val();
-    if (selectedCountryIso) {
-      //Fetch country border data and display on map
-      const borderData = await fetchCountryBorder(selectedCountryIso);
+    const selectedIso = $(this).val();
+    if (selectedIso) {
+      //Fetch country border data
+      const borderData = await fetchCountryBorder(selectedIso);
       if (borderData) {
         //Calculate the center of the countrys border
         const countryBorder = L.geoJSON(borderData);
@@ -201,19 +201,12 @@ $(document).ready(() => {
           },
         }).addTo(map);
       }
-      //Fetch weather data based on the selected country's lat and long
-      const countryData = await fetchCountryBorder(selectedCountryIso);
-      if (countryData) {
-        //Display weather info in modal overlay
-        displayWeatherInfo(countryData);
-      }
     } else {
       clearSelectedCountryBorder();
     }
   });
 });
 
-//Function to fetch country border
 async function fetchCountryBorder(isoCode) {
   try {
     const response = await fetch(
@@ -227,22 +220,6 @@ async function fetchCountryBorder(isoCode) {
   }
 }
 
-//Function to fetch weather data
-async function fetchCountry(selectedCountryIso) {
-  try {
-    const response = await fetch(
-      `http://localhost/projectGazetteer/php/countryInfo.php?iso=${selectedCountryIso}`
-    );
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.log("Error fetching counrty data", error);
-    return null;
-  }
-}
-
-//function to display weather information
-
 function clearSelectedCountryBorder() {
   if (selectedCountryBorder) {
     map.removeLayer(selectedCountryBorder);
@@ -251,32 +228,25 @@ function clearSelectedCountryBorder() {
 }
 
 // Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
-L.easyButton("<span>🌤</span>", async function () {
-  const selectedCountryIso = $("#countryList").val();
-  if (selectedCountryIso) {
-    const countryData = await fetchCountry(selectedCountryIso);
-
-    //Check if the countryData has the lat an long info
-    if (countryData.latitude && countryData.longitude) {
-      try {
-        const response = await fetch(
-          "http://localhost/projectGazetteer/php/weatherAPI.php?lat=${countryData.latitude}$lon=${countryData.longitude}"
-        );
-        const data = await response.json();
-        displayWeatherInfo(data);
-        console.log(data);
-      } catch (error) {
-        console.log("Error: ", error);
-      }
-    } else {
-      console.log("Latitude and longitude not available for selected country");
+L.easyButton("<span>🌤</span>", function () {
+  async function returnWeatherInfo() {
+    try {
+      const $url = "http://localhost/projectGazetteer/php/weatherAPI.php";
+      const response = await fetch($url);
+      const data = await response.json();
+      displayWeatherInfo(data);
+      console.log(data);
+    } catch (error) {
+      console.log("Error: ", error);
     }
   }
-}).addTo(map);
 
-async function displayWeatherInfo(data) {
-  try {
+  function displayWeatherInfo(data) {
+    console.log(data);
     const celcius = Math.round(parseFloat(data.current.temp) - 273.15);
+    const fehrenheit = Math.round(
+      (parseFloat(data.main.temp) - 273.15) * 1.8 + 32
+    );
     const sunriseTime = new Date(
       data.current.sunrise * 1000
     ).toLocaleTimeString();
@@ -291,14 +261,12 @@ async function displayWeatherInfo(data) {
       data.current.wind_speed;
     document.getElementById("currentWeatherConditions").innerHTML =
       data.current.weather[0].description;
-
-    $("#weatherModal").modal("show");
-  } catch (error) {
-    console.log("Error, weather API not working", error);
   }
-}
 
-// Exchange Rate Modal -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  returnWeatherInfo();
+
+  $("#weatherModal").modal("show");
+}).addTo(map);
 
 L.easyButton("<span>$</span>", async function () {
   const selectedCountryIso = $("#countryList").val();

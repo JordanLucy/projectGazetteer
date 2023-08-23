@@ -2,9 +2,9 @@
 
 $executionStartTime = microtime(true);
 
-$url = 'http://api.geonames.org/countryInfo?username=flightltd&style=full';
-
 $selectedCountryIso = $_REQUEST['iso'];
+
+$url = 'https://restcountries.com/v3.1/alpha/' . $selectedCountryIso;
 
 $ch = curl_init($url);
 
@@ -23,7 +23,7 @@ $output['status']['name'] = "ok";
 $output['status']['description'] = "success";
 $output['data'] = $decode;
 
-header('Content-Type: application/json; charset=URF-8');
+header('Content-Type: application/json; charset=UTF-8');
 
 header("Access-Control-Allow-Origin: *");
 
