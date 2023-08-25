@@ -80,6 +80,7 @@ async function successFunction(position) {
 
     const response = await fetch(apiUrl);
     const data = await response.json();
+    console.log(data);
 
     var countryIso = data.results[0].components["ISO_3166-1_apha-2"];
 
@@ -228,67 +229,59 @@ function clearSelectedCountryBorder() {
 }
 
 // Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
-L.easyButton("<span>🌤</span>", function () {
-  async function returnWeatherInfo() {
-    try {
-      const $url = "http://localhost/projectGazetteer/php/weatherAPI.php";
-      const response = await fetch($url);
-      const data = await response.json();
-      displayWeatherInfo(data);
-      console.log(data);
-    } catch (error) {
-      console.log("Error: ", error);
-    }
-  }
+L.easyButton("<span>🌤</span>", async function () {
+  try {
+    const $url = "http://localhost/projectGazetteer/php/weatherAPI.php";
+    const response = await fetch($url);
+    const result = await response.json();
 
-  function displayWeatherInfo(data) {
-    console.log(data);
-    const celcius = Math.round(parseFloat(data.weather.current.temp) - 273.15);
-    const fehrenheit = Math.round(
-      (parseFloat(data.weather.current.temp) - 273.15) * 1.8 + 32
-    );
+    console.log(result);
+
+    // const celcius = Math.round(parseFloat(result.data.weather.main.temp));
     const sunriseTime = new Date(
-      data.weather.current.sunrise * 1000
+      result.data.weather.sys.sunrise * 1000
     ).toLocaleTimeString();
     const sunsetTime = new Date(
-      data.weather.current.sunset * 1000
+      result.data.weather.sys.sunset * 1000
     ).toLocaleTimeString();
 
-    document.getElementById("tempInfo").innerHTML = celcius + "&deg;";
+    document.getElementById("tempInfo").innerHTML =
+      result.data.weather.main.temp + "&deg;";
     document.getElementById("sunriseInfo").innerHTML = sunriseTime;
     document.getElementById("sunsetInfo").innerHTML = sunsetTime;
     document.getElementById("windspeedInfo").innerHTML =
-      data.weather.current.wind_speed;
+      result.data.weather.wind.speed;
     document.getElementById("currentWeatherConditions").innerHTML =
-      data.weather.current.weather[0].description;
+      result.data.weather.weather[0].description;
+
+    $("#weatherModal").modal("show");
+  } catch (error) {
+    console.log("Couldn't fetch weather information: ", error);
   }
-
-  returnWeatherInfo();
-
-  $("#weatherModal").modal("show");
 }).addTo(map);
 
 L.easyButton("<span>$</span>", async function () {
-  const selectedCountryIso = $("#countryList").val();
+  // const selectedCountryIso = $("#countryList").val();
 
-  if (selectedCountryIso) {
-    try {
-      const response = await fetch(
-        "http://localhost/projectGazetteer/php/exchangeRates.php?currentCurrency=" +
-          selectedCountryIso
-      );
-      const result = await response.json();
-      const currentRate = result.data.rates;
-      const currencyName = selectedCountryIso;
+  // if (selectedCountryIso) {
+  try {
+    const response = await fetch(
+      "http://localhost/projectGazetteer/php/currencyAPI.php"
+    );
+    const result = await response.json();
+    console.log(result);
+    const currentRate = result.data.rates;
+    // const currencyName = selectedCountryIso;
 
-      document.getElementById("currencyName").innerHTML = currencyName;
-      document.getElementById("currencySymbol").innerHTML = "$";
-      document.getElementById("exchangeRate").innerHTML = isNaN(currentRate)
-        ? "Exchange Rate Not Found"
-        : currentRate.toFixed(2);
-      $("#currencyModal").modal("show");
-    } catch (error) {
-      console.log("Currency Error: ", error);
-    }
+    document.getElementById("base").innerHTML = result.data.base;
+    document.getElementById("currencyName").innerHTML = result.data.rates;
+    document.getElementById("currencySymbol").innerHTML = "$";
+    document.getElementById("exchangeRate").innerHTML = isNaN(currentRate)
+      ? "Exchange Rate Not Found"
+      : currentRate.toFixed(2);
+    $("#currencyModal").modal("show");
+  } catch (error) {
+    console.log("Currency Error: ", error);
   }
+  // }
 }).addTo(map);
