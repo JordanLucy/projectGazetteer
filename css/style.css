@@ -31,3 +31,20 @@ body {
     display:flex;
     height:100%;
 }
+
+/* Modal CSS */
+
+.leaflet-bar button {
+    height: 56px; /* easyButton's height default */
+    width: 56px;  /*  easyButton's width default */
+  }
+
+  tr:nth-child(odd) {
+    background-color: rgba(144, 238, 144, .5);
+  }
+
+  .modal-header{
+    background-color: grey;
+    color: white;
+    text-decoration: solid;
+  }

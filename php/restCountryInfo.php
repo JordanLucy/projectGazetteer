@@ -16,7 +16,7 @@ $result = curl_exec($ch);
 
 curl_close($ch);
 
-$decode = json_decode($result, true);
+$restCountries = json_decode($result, true);
 
 $output['status']['code'] = "200";
 $output['status']['name'] = "ok";

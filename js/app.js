@@ -2,6 +2,8 @@ var countryBorder;
 var selectedCountryBorder;
 var currentCountryIso = null;
 
+let trafficLayer;
+
 var popup = L.popup();
 
 // Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
@@ -97,19 +99,15 @@ async function successFunction(position) {
     }
 
     //Set the map view to user's location
-    map.setView([latitude, longitude], 16);
+    map.setView([latitude, longitude], 8);
 
     //Create LatLng object
     var userLatLng = L.latLng(latitude, longitude);
 
     //Add marker and circle for user's location
     var radius = position.coords.accuracy;
-    L.marker([latitude, longitude])
-      .addTo(map)
-      .bindPopup(
-        "You are within " + Math.floor(radius) + " meters from this point"
-      )
-      .openPopup();
+    L.marker([latitude, longitude]).addTo(map);
+
     L.circle(userLatLng, { radius: radius }).addTo(map);
   } catch (error) {
     console.log("Error fetching reverse geocoding data", error);
@@ -138,30 +136,27 @@ $(document).ready(() => {
   fetchAndPopulateCountryList();
 });
 
-const fetchAndPopulateCountryList = async () => {
-  // async call to new controller
-  const countryListData = await fetchCountryList();
-  //console.log(countryListData);
-  populateCountryList(countryListData);
-  // loop data into select via id target
+const fetchCountryList = () => {
+  return $.ajax({
+    url: "http://localhost/projectGazetteer/php/countryController.php",
+    method: "GET",
+    dataType: "json",
+  });
 };
 
-const fetchCountryList = async () => {
-  try {
-    const response = await fetch(
-      "http://localhost/projectGazetteer/php/countryController.php"
-    );
-    const data = await response.json();
-
-    if (data.status.code === "200" && data.data) {
-      return data.data;
-    } else {
-      throw new Error("Unable to fetch country list");
-    }
-  } catch (error) {
-    console.error("Error fetching country list:", error);
-    return [];
-  }
+const fetchAndPopulateCountryList = () => {
+  fetchCountryList()
+    .then((data) => {
+      if (data.status.code === "200" && data.data) {
+        populateCountryList(data.data);
+        // Loop data into select via ID target
+      } else {
+        throw new Error("Unable to fetch country list");
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching and populating country list:", error);
+    });
 };
 
 const populateCountryList = (data) => {
@@ -228,60 +223,222 @@ function clearSelectedCountryBorder() {
   }
 }
 
-// Weather API ----------------------------------------------------------------------------------------------------------------------------------------------
-L.easyButton("<span>🌤</span>", async function () {
-  try {
-    const $url = "http://localhost/projectGazetteer/php/weatherAPI.php";
-    const response = await fetch($url);
-    const result = await response.json();
+// General Country Info API call ----------------------------------------------------------------------------------------------------------------------------------------------
+L.easyButton(
+  '<i class="fa-solid fa-info fa-lg" style="color: #000000;"></i>',
+  function () {
+    $.ajax({
+      url: "http://localhost/projectGazetteer/php/generalCountryInfo.php",
+      method: "GET",
+      dataType: "json",
+      success: function (result) {
+        console.log(result);
 
-    console.log(result);
+        // Check if the 'geonames' array exists and is not empty
+        if (
+          result.data &&
+          result.data.geonames &&
+          result.data.geonames.length > 0
+        ) {
+          // Access the first country object in the 'geonames' array
+          var countryInfo = result.data.geonames[0];
 
-    // const celcius = Math.round(parseFloat(result.data.weather.main.temp));
-    const sunriseTime = new Date(
-      result.data.weather.sys.sunrise * 1000
-    ).toLocaleTimeString();
-    const sunsetTime = new Date(
-      result.data.weather.sys.sunset * 1000
-    ).toLocaleTimeString();
+          // Access and display country information
+          $("#countryName").html(countryInfo.countryName);
+          $("#countryCapital").html(countryInfo.capital);
+          $("#countryCode").html(countryInfo.countryCode);
+          $("#countryContinent").html(countryInfo.continentName);
 
-    document.getElementById("tempInfo").innerHTML =
-      result.data.weather.main.temp + "&deg;";
-    document.getElementById("sunriseInfo").innerHTML = sunriseTime;
-    document.getElementById("sunsetInfo").innerHTML = sunsetTime;
-    document.getElementById("windspeedInfo").innerHTML =
-      result.data.weather.wind.speed;
-    document.getElementById("currentWeatherConditions").innerHTML =
-      result.data.weather.weather[0].description;
+          if (countryInfo.population >= 1000000) {
+            var populationMillions =
+              (countryInfo.population / 1000000).toFixed(2) + "M";
+            $("#countryPopulation").html(populationMillions);
+          } else {
+            $("#countryPopulation").html(countryInfo.population);
+          }
+          $("#countryArea").html(countryInfo.areaInSqKm + `SqKm`);
 
-    $("#weatherModal").modal("show");
-  } catch (error) {
-    console.log("Couldn't fetch weather information: ", error);
+          // Show the modal
+          $("#countryModal").modal("show");
+        } else {
+          console.log("No country info found in the response.");
+        }
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't get general country info: ",
+          textStatus,
+          errorThrown
+        );
+      },
+    });
   }
-}).addTo(map);
+).addTo(map);
 
-L.easyButton("<span>$</span>", async function () {
-  // const selectedCountryIso = $("#countryList").val();
+// News modal ----------------------------------------------------------------------------------------------------------------------------------------------
+L.easyButton(
+  '<i class="fa-solid fa-newspaper fa-lg" style="color: #000000"></i>',
+  function () {
+    $.ajax({
+      url: "http://localhost/projectGazetteer/php/countryNews.php",
+      method: "GET",
+      dataType: "json",
+      success: function (result) {
+        console.log(result);
 
-  // if (selectedCountryIso) {
-  try {
-    const response = await fetch(
-      "http://localhost/projectGazetteer/php/currencyAPI.php"
-    );
-    const result = await response.json();
-    console.log(result);
-    const currentRate = result.data.rates;
-    // const currencyName = selectedCountryIso;
+        if (result.data.articles && result.data.articles.length > 0) {
+          for (let i = 0; i < result.data.articles.length; i++) {
+            $("#newsImage").attr("src", result.data.articles[i].urlToImage);
+            $("#newsTitle").html(result.data.articles[i].title);
+            $("#newsAuthor").html(result.data.articles[i].author);
+            $("#newsDesc").html(result.data.articles[i].description);
+            $("#newsDate").html(result.data.articles[i].publishedAt);
 
-    document.getElementById("base").innerHTML = result.data.base;
-    document.getElementById("currencyName").innerHTML = result.data.rates;
-    document.getElementById("currencySymbol").innerHTML = "$";
-    document.getElementById("exchangeRate").innerHTML = isNaN(currentRate)
-      ? "Exchange Rate Not Found"
-      : currentRate.toFixed(2);
-    $("#currencyModal").modal("show");
-  } catch (error) {
-    console.log("Currency Error: ", error);
+            var newsUrl = document.createElement("a");
+            newsUrl.href = result.data.articles[i].wikipediaUrl;
+            newsUrl.target = "_blank";
+            newsUrl.textContent = "Click this link to load the Wikipedia Page";
+
+            $("#newsUrl").html(newsUrl);
+          }
+
+          $("#newsModal").modal("show");
+        } else {
+          console.log("No articles found");
+        }
+      },
+      error: function (jqHXR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't find any news information: ",
+          jqHXR,
+          textStatus,
+          errorThrown
+        );
+      },
+    });
   }
-  // }
-}).addTo(map);
+).addTo(map);
+
+// Weather API call ----------------------------------------------------------------------------------------------------------------------------------------------
+L.easyButton(
+  '<i class="fa-solid fa-cloud fa-lg" style="color: #000000;"></i>',
+  function () {
+    $.ajax({
+      url: "http://localhost/projectGazetteer/php/weatherAPI.php",
+      method: "GET",
+      dataType: "json",
+      success: function (result) {
+        console.log(result);
+
+        const sunriseTime = new Date(
+          result.data.weather.sys.sunrise * 1000
+        ).toLocaleTimeString();
+        const sunsetTime = new Date(
+          result.data.weather.sys.sunset * 1000
+        ).toLocaleTimeString();
+
+        $("#tempInfo").html(
+          Math.round(result.data.weather.main.temp) + "&deg;"
+        );
+        $("#tempFeel").html(
+          Math.round(result.data.weather.main.feels_like) + "&deg;"
+        );
+        $("#sunriseInfo").html(sunriseTime);
+        $("#sunsetInfo").html(sunsetTime);
+        $("#windspeedInfo").html(
+          result.data.weather.wind.speed +
+            "mph at " +
+            result.data.weather.wind.deg +
+            "°"
+        );
+        $("#currentWeatherConditions").html(
+          result.data.weather.weather[0].description
+        );
+
+        $("#weatherModal").modal("show");
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't fetch weather information: ",
+          jqXHR,
+          textStatus,
+          errorThrown
+        );
+      },
+    });
+  }
+).addTo(map);
+
+// Currency API call ----------------------------------------------------------------------------------------------------------------------------------------------
+L.easyButton(
+  '<i class="fa-solid fa-coins fa-lg" style="color: #000000;"></i>',
+  function () {
+    $.ajax({
+      url: "http://localhost/projectGazetteer/php/currencyAPI.php?currentCurrency=GBP",
+      method: "GET",
+      dataType: "json",
+      success: function (result) {
+        console.log(result);
+
+        $("#base").html("USD"); //Base currency is USD
+        $("#currencyName").html("GBP"); //Target is GBP
+        $("#currencySymbol").html("£"); //Currency symbol for GBP
+        // $("#exchangeRate").html(result.data.rates.GBP);
+
+        $("#currencyModal").modal("show");
+      },
+      error: function (jqHXR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't get currency information: ",
+          jqHXR,
+          textStatus,
+          errorThrown
+        );
+      },
+    });
+  }
+).addTo(map);
+
+// Wikipedia API call ----------------------------------------------------------------------------------------------------------------------------------------------
+L.easyButton(
+  '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000000;"></i>',
+  function () {
+    $.ajax({
+      url: "http://localhost/projectGazetteer/php/countryWiki.php",
+      method: "GET",
+      dataType: "json",
+      success: function (result) {
+        console.log(result);
+
+        var countryWikiResults = result.data.geonames[0];
+
+        //Create img element for thumbnail
+        var thumbnailImg = document.createElement("img");
+        thumbnailImg.src = countryWikiResults.thumbnailImg;
+
+        $("#wikiThumbnail").html(thumbnailImg);
+        $("#countryWiki").html(countryWikiResults.title);
+        $("#wikiSummary").html(countryWikiResults.summary);
+        $("#wikiFeature").html(countryWikiResults.feature);
+
+        //Create element for the wiki link
+        var wikiLink = document.createElement("a");
+        wikiLink.href = countryWikiResults.wikipediaUrl;
+        wikiLink.target = "_blank";
+        wikiLink.textContent = "Click this link to load the Wikipedia Page";
+
+        $("#wikiUrl").html(wikiLink);
+
+        $("#wikiModal").modal("show");
+      },
+      error: function (jqHXR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't get country wiki information: ",
+          jqHXR,
+          textStatus,
+          errorThrown
+        );
+      },
+    });
+  }
+).addTo(map);

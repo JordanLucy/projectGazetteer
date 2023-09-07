@@ -2,8 +2,7 @@
 
 $executionStartTime = microtime(true);
 
-$url = 'https://openexchangerates.org/api/latest.json?app_id=2fe339a2d149470785e7b13471dd50d3';
-
+$url = "http://api.geonames.org/wikipediaSearchJSON?q=london&countryCode=GB&maxRows=10&username=flightltd&style=full";
 $curl = curl_init($url);
 
 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -14,22 +13,16 @@ $result = curl_exec($curl);
 
 curl_close($curl);
 
-$exchangeRates = json_decode($result, true);
-
-$currentCurrency = isset($_GET['currentCurrency']) ? $_GET['currentCurrency'] : 'USD'; // Default to USD if currentCurrency is not provided
+$countryWikiInfo = json_decode($result, true);
 
 $output['status']['code'] = "200";
 $output['status']['name'] = "ok";
 $output['status']['description'] = "success";
 $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-
-if (isset($exchangeRates['rates'][$currentCurrency])) {
-    $output['data']['currentRate'] = $exchangeRates['rates'][$currentCurrency];
-} else {
-    $output['data']['currentRate'] = "Can't find that Currency Rate";
-}
+$output['data'] = $countryWikiInfo;
 
 header('Content-Type: application/json; charset=UTF-8');
+
 header("Access-Control-Allow-Origin: *");
 
 echo json_encode($output);
