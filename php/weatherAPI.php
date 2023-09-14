@@ -1,8 +1,11 @@
 <?php
 
 $executionStartTime = microtime(true);
+$latitude = $_REQUEST['lat'];
+$longitude = $_REQUEST['lon'];
 
-$url = 'https://api.openweathermap.org/data/2.5/weather?lat=53.40&lon=-2.98&exclude=minutely,alerts&units=metric&appid=78c766e3970675bb23047dc7723a57da';
+$url = "https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&exclude=minutely,alerts&units=metric&appid=78c766e3970675bb23047dc7723a57da";
+
 $ch = curl_init($url);
 
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);

@@ -1,48 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+
     <!--Leaflet-->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/><!--Leaftlet Links-->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" /><!--Leaftlet Links-->
     <link rel="stylesheet" href="lib/leaflet/plugins/easy-button.css"><!--EasyButton Links-->
 
     <!--Bootstrap -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
-    
+
     <!--Stylesheet-->
-    <link rel="stylesheet" href="css/style.css"/>
+    <link rel="stylesheet" href="css/style.css" />
 
     <!--Font-Awesome Styles-->
     <script src="https://kit.fontawesome.com/83c8ad4323.js" crossorigin="anonymous"></script>
-    
 
-    <title>Gazetteer Project</title>
+
+    <title>(get a job)Gazetteer Project</title>
 </head>
-<body>
 
-    <header>
-        <nav class="navbar navbar-brand bg-secondary text-light">
-            <div class="container-left">
-                <h1>Gazetteer</h1>
-
-                    <div id="verticalSpacing"></div>
-
-                    <label>View Country</label>
-                    <select id="countryList" name="countryList">Dropdown</select>
-            </div>
-        </nav>
-    </header>
-
-    <!--<div id="loading">
-        <div id="loading-img">
-          <img src="images/loading/loading.gif"/>
-          <p>Loading...</p>
+<body class="little-weiner">
+    <div id="select2-container">
+        <select id="countryList" name="countryList" class="form-select floating-select"
+            aria-label="Select Country"></select>
+    </div>
+    <div class="d-flex justify-content-center">
+        <div id="spinner" class="spinner-border text-success" role="status" style="display: none">
+            <span class="visually-hidden">Loading...</span>
         </div>
-    </div>-->
-
+    </div>
     <div id="map"></div>
 
     <!------------------------------------------------------------------------------------------------------------------------------------->
@@ -104,35 +96,9 @@
                 </div>
                 <div class="modal-body short-modal">
                     <table id="newsTable" class="table">
-                        <!--Potential image-->
-                        <tbody>
-                            <tr>
-                                <th scope="row"></th>
-                                <td id="newsImage"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">News Article:</th>
-                                <td id="newsTitle"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Author:</th>
-                                <td id="newsAuthor"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Summary:</th>
-                                <td id="newsDesc"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Published:</th>
-                                <td id="newsDate"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Link to Article:</th>
-                                <td id="newsUrl"></td>
-                            </tr>
-                            
-                            
+                        <tbody id="news-tbody">
                         </tbody>
+                        <!--Potential image-->
                     </table>
                 </div>
                 <div class="modal-footer">
@@ -158,11 +124,11 @@
                         <tbody>
                             <tr>
                                 <th scope="row">Current Temperature:</th>
-                                <td  id="tempInfo"></td>
+                                <td id="tempInfo"></td>
                             </tr>
                             <tr>
                                 <th scope="row">Real Feel:</th>
-                                <td  id="tempFeel"></td>
+                                <td id="tempFeel"></td>
                             </tr>
                             <tr>
                                 <th scope="row">Sunrise:</th>
@@ -278,7 +244,7 @@
         </div>
     </div>
 
-<!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
     <!--Hotel modal API-->
     <div id="hotelModal" class="modal fade" tabindex="-1" aria-labelledby="hotel-api" aria-hidden="true">
         <div class="modal-dialog">
@@ -315,9 +281,7 @@
                                 <th scope="row">Sun Cream:</th>
                                 <td class="sunCream"></td>
                             </tr>
-
                         </tbody>
-
                     </table>
                 </div>
 
@@ -329,17 +293,23 @@
             </div>
         </div>
     </div>
-  <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+    <!---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
 
-<!--Leaftlet Scripts-->
+    <!--Leaftlet Scripts-->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
 
-
+    <!--select 2-->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script defer type="text/javascript" src="js/app.js"></script>
 </body>
+
 </html>

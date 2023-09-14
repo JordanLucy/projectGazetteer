@@ -2,7 +2,11 @@
 
 $executionStartTime = microtime(true);
 
-$url = "https://newsapi.org/v2/top-headlines?country=gb&pageSize=11&apiKey=0306d407a42548e393fd5d2a6e7fcdf3";
+$countryNews = strtolower($_REQUEST['country']);
+
+$apikey = "c5649483f58911253e679c7798c466f4";
+
+$url = "https://gnews.io/api/v4/top-headlines?category=general&country=$countryNews&lang=en&apikey=$apikey";
 
 $curl = curl_init($url);
 

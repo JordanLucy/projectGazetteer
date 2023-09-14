@@ -15,4 +15,3 @@ foreach ($jsonData['features'] as $feature) {
         break;
     }
 }
-?>

@@ -2,26 +2,27 @@
 
 $executionStartTime = microtime(true);
 
-$selectedCountryIso = $_REQUEST['iso'];
+// $selectedCountryIso = $_REQUEST['iso'];
 
-$url = 'https://restcountries.com/v3.1/alpha/' . $selectedCountryIso;
+$url = 'https://restcountries.com/v3.1/all';
+/*  $url = 'https://restcountries.com/v3.1/all/  . $selectedCountryIso'; */
 
-$ch = curl_init($url);
+$curl = curl_init($url);
 
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($curl, CURLOPT_URL, $url);
 
-$result = curl_exec($ch);
+$result = curl_exec($curl);
 
-curl_close($ch);
+curl_close($curl);
 
 $restCountries = json_decode($result, true);
 
 $output['status']['code'] = "200";
 $output['status']['name'] = "ok";
 $output['status']['description'] = "success";
-$output['data'] = $decode;
+$output['data'] = $restCountries;
 
 header('Content-Type: application/json; charset=UTF-8');
 

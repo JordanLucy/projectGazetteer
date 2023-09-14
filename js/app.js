@@ -1,13 +1,25 @@
 var countryBorder;
 var selectedCountryBorder;
-var currentCountryIso = null;
 
-let trafficLayer;
+let currentCountryIso;
+let currentCapitalLatitude;
+let currentCapitalLongitude;
+let currentCapital;
 
 var popup = L.popup();
 
+//Loading Spinner
+$(".modal").on("show.bs.modal", function () {
+  $("#spinnerContainer").show();
+});
+
+// Hide the spinner when a modal is hidden
+$(".modal").on("hidden.bs.modal", function () {
+  $("#spinnerContainer").hide();
+});
+
 // Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
-var map = L.map("map").setView([53.4084, -2.9916], 13);
+const map = L.map("map").setView([53.4084, -2.9916], 13);
 
 var mapTile = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -46,8 +58,6 @@ var Esri_NatGeoWorldMap = L.tileLayer(
   }
 );
 
-var singleMarker = L.marker([53.4084, -2.9916]).addTo(map);
-
 //Layer Controller
 var baseMaps = {
   "Normal MapTile": mapTile,
@@ -57,66 +67,7 @@ var baseMaps = {
   "Nat Geo Map": Esri_NatGeoWorldMap,
 };
 
-var overlayMaps = {
-  Marker: singleMarker,
-};
-
-var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
-
-//Geolocation of user -----------------------------------------------------------------------------------------------------------------------------
-
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
-} else {
-  console.log("Gelocation is not supported by this browser.");
-}
-
-async function successFunction(position) {
-  var latitude = position.coords.latitude;
-  var longitude = position.coords.longitude;
-
-  try {
-    // Using openCage API
-    var apiKey = "be0aa5008ed74764a77721198258cbbb";
-    var apiUrl = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
-
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    console.log(data);
-
-    var countryIso = data.results[0].components["ISO_3166-1_apha-2"];
-
-    // Update currentCountryIso
-    currentCountryIso = countryIso;
-
-    //Update the Select Dropdown
-    var selectDropDown = document.getElementById("countryList");
-    for (var i = 0; i < selectDropDown.options.length; i++) {
-      if (selectDropDown.options[i].value === countryIso) {
-        selectDropDown.selectedIndex = i;
-        break;
-      }
-    }
-
-    //Set the map view to user's location
-    map.setView([latitude, longitude], 8);
-
-    //Create LatLng object
-    var userLatLng = L.latLng(latitude, longitude);
-
-    //Add marker and circle for user's location
-    var radius = position.coords.accuracy;
-    L.marker([latitude, longitude]).addTo(map);
-
-    L.circle(userLatLng, { radius: radius }).addTo(map);
-  } catch (error) {
-    console.log("Error fetching reverse geocoding data", error);
-  }
-}
-
-function errorFunction() {
-  console.log("Unable to retrieve your location");
-}
+var layerControl = L.control.layers(baseMaps).addTo(map);
 
 //Markers On Click
 
@@ -131,11 +82,6 @@ map.on("click", onMapClick);
 
 //Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-$(document).ready(() => {
-  // this will run when page loads
-  fetchAndPopulateCountryList();
-});
-
 const fetchCountryList = () => {
   return $.ajax({
     url: "http://localhost/projectGazetteer/php/countryController.php",
@@ -147,6 +93,7 @@ const fetchCountryList = () => {
 const fetchAndPopulateCountryList = () => {
   fetchCountryList()
     .then((data) => {
+      console.log("Fetch Country List Result: ", data);
       if (data.status.code === "200" && data.data) {
         populateCountryList(data.data);
         // Loop data into select via ID target
@@ -164,62 +111,193 @@ const populateCountryList = (data) => {
 
   $("#countryList").html(
     $.map(data, (feature, i) => {
-      return `<option value="${feature.iso_a2}" id="countryListOption-${i}">${feature.countryName}</option>`;
+      return `<option value="${feature.iso_a2}" ${
+        feature.iso_a2 == "GB" ? "selected" : ""
+      } id="countryListOption-${i}">${feature.countryName}</option>`;
     })
   );
 };
 
 // Create and target Country Border -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+/*
+What we want to do is, whenever the country is changed 
+ we need to find the capital (getCapitalFromIsoCode) -> currentCapital = getCapitalFromIsoCode(currentIsoCode)
+ then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (shoudl return an array/obj of long: bla, lat: bla)
+ then update our currentCapitalLatitude & currentCapitalLongitude: currentCapitalLatitude = currentCoords.long; currentCapitalLongitude = currentCoords.lat;
+*/
 $(document).ready(() => {
-  $("#countryList").on("change", async function () {
-    const selectedIso = $(this).val();
-    if (selectedIso) {
-      //Fetch country border data
-      const borderData = await fetchCountryBorder(selectedIso);
-      if (borderData) {
-        //Calculate the center of the countrys border
-        const countryBorder = L.geoJSON(borderData);
-        const countryCenter = countryBorder.getBounds().getCenter();
-
-        //Clear previous country border if exists
-        clearSelectedCountryBorder();
-
-        //Set the map's view to the country's center as defined above.
-        map.setView(countryCenter, 5);
-
-        //Display the country border on the map as a layer
-        selectedCountryBorder = L.geoJSON(borderData, {
-          style: {
-            color: "green",
-            weight: 2,
-            opacity: 0.5,
-          },
-        }).addTo(map);
-      }
-    } else {
-      clearSelectedCountryBorder();
-    }
-  });
+  try {
+    fetchAndSetUserLocation();
+    fetchAndPopulateCountryList();
+    fetchAndSetBorderData();
+    $("#countryList").select2({
+      width: "50%",
+      height: "40px",
+    });
+    $("#countryList").on("change", () => {
+      fetchAndSetBorderData();
+    });
+  } catch {
+    alert("Raggy, where is my datacles");
+  }
+  // TODO: dont have more than 1 on document ready function.
 });
 
-async function fetchCountryBorder(isoCode) {
-  try {
-    const response = await fetch(
-      `http://localhost/projectGazetteer/php/countryBorder.php?iso=${isoCode}`
-    );
-    const borderData = await response.json();
-    return borderData;
-  } catch (error) {
-    console.log("Error fetching country border", error);
-    return null;
+function fetchAndSetBorderData() {
+  const selectedIso = $("#countryList").val();
+  if (selectedIso) {
+    currentCountryIso = selectedIso;
+    // try {
+    // fetchAndSetBorderData();
+    // fetchAndSetCurrentCapitalCoords();
+    // } catch { alert('big poo poo') }
+
+    // TODO: separate this into its own function
+    // TODO: add call to run lookup for capital co-ords
+    // Make an AJAX request to fetch country border data
+    $.ajax({
+      url: `http://localhost/projectGazetteer/php/countryBorder.php?iso=${selectedIso}`,
+      method: "GET",
+      dataType: "json",
+      success: function (borderData) {
+        console.log("Fetch Country Border Result: ", borderData);
+        if (borderData) {
+          // Calculate the center of the country's border
+          const countryBorder = L.geoJSON(borderData);
+          const countryCenter = countryBorder.getBounds().getCenter();
+
+          // Clear previous country border if exists
+          clearSelectedCountryBorder();
+
+          // Set the map's view to the country's center as defined above.
+          map.setView(countryCenter, 5);
+
+          // Display the country border on the map as a layer
+          selectedCountryBorder = L.geoJSON(borderData, {
+            style: {
+              color: "green",
+              weight: 2,
+              opacity: 0.5,
+            },
+          }).addTo(map);
+        }
+      },
+      error: function (error) {
+        console.error("Error fetching country border data:", error);
+      },
+    });
+    getCapitalFromIsoCode(currentCountryIso); // this func needs to return the capital
+  } else {
+    clearSelectedCountryBorder();
   }
+}
+
+function forwardGeoEncodePlaceName(place) {
+  $.ajax({
+    url: "http://localhost/projectGazetteer/php/openCageAPI.php",
+    method: "GET",
+    dataType: "json",
+    data: { placeName: encodeURIComponent(place[0]) },
+    success: function (result) {
+      currentCapitalLatitude = result.data.results[0].geometry.lat;
+      currentCapitalLongitude = result.data.results[0].geometry.lng;
+      console.log(result);
+    },
+  });
 }
 
 function clearSelectedCountryBorder() {
   if (selectedCountryBorder) {
     map.removeLayer(selectedCountryBorder);
     selectedCountryBorder = null;
+  }
+}
+
+function getCapitalFromIsoCode(isoCode) {
+  $.ajax({
+    url: "http://localhost/projectGazetteer/php/restCountryInfo.php?",
+    method: "GET",
+    dataType: "json",
+    success: function (result) {
+      // console.log("Here is the restAPI output", result);
+      if (result.data) {
+        result.data.forEach((country) => {
+          const capitalCode = country.cca2;
+          if (isoCode === capitalCode) {
+            currentCapital = country.capital[0];
+            forwardGeoEncodePlaceName(country.capital);
+          }
+        });
+      } else {
+        console.log("Couldn't find the country code from rest API");
+      }
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.log(
+        "Couldn't find the restAPI data: ",
+        jqXHR,
+        textStatus,
+        errorThrown
+      );
+    },
+  });
+}
+
+//Geolocation of user -----------------------------------------------------------------------------------------------------------------------------
+function fetchAndSetUserLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
+  } else {
+    console.log("Gelocation is not supported by this browser.");
+  }
+
+  async function successFunction(position) {
+    var latitude = position.coords.latitude;
+    var longitude = position.coords.longitude;
+
+    try {
+      // Using openCage API
+      var apiKey = "be0aa5008ed74764a77721198258cbbb";
+      var url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+      console.log("User Location Data: ", data);
+
+      let countryIso = data.results[0].components["ISO_3166-1_apha-2"];
+
+      // Update currentCountryIso
+      currentCountryIso = countryIso;
+      // console.log("This is the current Country ISO: ", currentCountryIso); TODO: Fix this to actually have a value so it can be reused.
+
+      //Update the Select Dropdown
+      var selectDropDown = document.getElementById("countryList");
+      for (var i = 0; i < selectDropDown.options.length; i++) {
+        if (selectDropDown.options[i].value === countryIso) {
+          selectDropDown.selectedIndex = i;
+          break;
+        }
+      }
+
+      //Set the map view to user's location
+      map.setView([latitude, longitude], 5);
+      fetchAndSetBorderData();
+      //Create LatLng object
+      var userLatLng = L.latLng(latitude, longitude);
+
+      //Add marker and circle for user's location
+      var radius = position.coords.accuracy;
+      L.marker([latitude, longitude]).addTo(map);
+
+      L.circle(userLatLng, { radius: radius }).addTo(map);
+    } catch (error) {
+      console.log("Error fetching reverse geocoding data", error);
+    }
+  }
+
+  function errorFunction() {
+    console.log("Unable to retrieve your location");
   }
 }
 
@@ -231,7 +309,15 @@ L.easyButton(
       url: "http://localhost/projectGazetteer/php/generalCountryInfo.php",
       method: "GET",
       dataType: "json",
+      data: {
+        //TODO: finish setting the data up.
+        country: currentCountryIso,
+      },
+      beforeSend: function () {
+        $("#spinner").show();
+      },
       success: function (result) {
+        $("#spinner").hide();
         console.log(result);
 
         // Check if the 'geonames' array exists and is not empty
@@ -267,6 +353,7 @@ L.easyButton(
       error: function (jqXHR, textStatus, errorThrown) {
         console.log(
           "Couldn't get general country info: ",
+          jqXHR,
           textStatus,
           errorThrown
         );
@@ -278,44 +365,55 @@ L.easyButton(
 // News modal ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
   '<i class="fa-solid fa-newspaper fa-lg" style="color: #000000"></i>',
-  function () {
-    $.ajax({
-      url: "http://localhost/projectGazetteer/php/countryNews.php",
-      method: "GET",
-      dataType: "json",
-      success: function (result) {
-        console.log(result);
+  () => {
+    try {
+      $.ajax({
+        url: "http://localhost/projectGazetteer/php/countryNews.php",
+        method: "GET",
+        dataType: "json",
+        data: {
+          //TODO: finish setting the data up.
+          country: currentCountryIso,
+        },
+        beforeSend: function () {
+          $("#spinner").show();
+          console.log(currentCountryIso);
+        },
+        success: function (result) {
+          console.log(result);
 
-        if (result.data.articles && result.data.articles.length > 0) {
+          if (!result?.data?.articles?.length > 0 ?? false) {
+            console.log("No articles found");
+            alert("WEE WOO WEE WOO BLYATTTTTT");
+            return;
+          }
+          $("#news-tbody").html("");
+
           for (let i = 0; i < result.data.articles.length; i++) {
-            $("#newsImage").attr("src", result.data.articles[i].urlToImage);
-            $("#newsTitle").html(result.data.articles[i].title);
-            $("#newsAuthor").html(result.data.articles[i].author);
-            $("#newsDesc").html(result.data.articles[i].description);
-            $("#newsDate").html(result.data.articles[i].publishedAt);
-
-            var newsUrl = document.createElement("a");
-            newsUrl.href = result.data.articles[i].wikipediaUrl;
-            newsUrl.target = "_blank";
-            newsUrl.textContent = "Click this link to load the Wikipedia Page";
-
-            $("#newsUrl").html(newsUrl);
+            $("#news-tbody").append(
+              `<tr>
+                <td><img style="height:100px;object-fit:cover;width:150px;" src="${result.data.articles[i].image}"></td>
+                <td id="newsTitle"><a target="_blank" href="${result.data.articles[i].url}">${result.data.articles[i].title}</a></td>
+            </tr>`
+            );
           }
 
           $("#newsModal").modal("show");
-        } else {
-          console.log("No articles found");
-        }
-      },
-      error: function (jqHXR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't find any news information: ",
-          jqHXR,
-          textStatus,
-          errorThrown
-        );
-      },
-    });
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't find any news information: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+      });
+    } catch {
+      alert("an error has occured when trying to fetch the news oh no!");
+    } finally {
+      $("#spinner").hide();
+    }
   }
 ).addTo(map);
 
@@ -323,12 +421,25 @@ L.easyButton(
 L.easyButton(
   '<i class="fa-solid fa-cloud fa-lg" style="color: #000000;"></i>',
   function () {
+    if (!currentCapitalLatitude || !currentCapitalLongitude) {
+      alert("you have been a big bonobo idiot loser get a job.");
+      return;
+    }
+
     $.ajax({
       url: "http://localhost/projectGazetteer/php/weatherAPI.php",
       method: "GET",
       dataType: "json",
+      data: {
+        lat: currentCapitalLatitude,
+        lon: currentCapitalLongitude,
+      },
+      beforeSend: function () {
+        $("#spinner").show(); // TODO: Fix spinner position
+      },
       success: function (result) {
-        console.log(result);
+        $("#spinner").hide();
+        console.log("Weather API Call Result: ", result);
 
         const sunriseTime = new Date(
           result.data.weather.sys.sunrise * 1000
@@ -377,20 +488,27 @@ L.easyButton(
       url: "http://localhost/projectGazetteer/php/currencyAPI.php?currentCurrency=GBP",
       method: "GET",
       dataType: "json",
+      // data: { TODO: finish setting the data up.
+
+      // },
+      beforeSend: function () {
+        $("#spinner").show();
+      },
       success: function (result) {
+        $("#spinner").hide();
         console.log(result);
 
-        $("#base").html("USD"); //Base currency is USD
+        $("#base").html("USD"); //Base currency is USD  TODO: Change this to a proper currency converter
         $("#currencyName").html("GBP"); //Target is GBP
         $("#currencySymbol").html("£"); //Currency symbol for GBP
         // $("#exchangeRate").html(result.data.rates.GBP);
 
         $("#currencyModal").modal("show");
       },
-      error: function (jqHXR, textStatus, errorThrown) {
+      error: function (jqXHR, textStatus, errorThrown) {
         console.log(
           "Couldn't get currency information: ",
-          jqHXR,
+          jqXHR,
           textStatus,
           errorThrown
         );
@@ -402,43 +520,62 @@ L.easyButton(
 // Wikipedia API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
   '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000000;"></i>',
-  function () {
-    $.ajax({
-      url: "http://localhost/projectGazetteer/php/countryWiki.php",
-      method: "GET",
-      dataType: "json",
-      success: function (result) {
-        console.log(result);
+  () => {
+    if (!currentCountryIso || !currentCapital) {
+      alert("No cunt or cap set.");
+    }
+    try {
+      console.log("currentCountryIso", currentCountryIso);
+      console.log("currentCapital", currentCapital);
+      $.ajax({
+        url: "http://localhost/projectGazetteer/php/countryWiki.php",
+        method: "GET",
+        dataType: "json",
+        data: {
+          // TODO: finish setting the data up.
+          country: currentCountryIso,
+          countryCapital: currentCapital,
+        },
+        beforeSend: function () {
+          $("#spinner").show();
+        },
+        success: function (result) {
+          console.log("Wiki api call result: ", result);
 
-        var countryWikiResults = result.data.geonames[0];
+          var countryWikiResults = result.data.geonames[0];
 
-        //Create img element for thumbnail
-        var thumbnailImg = document.createElement("img");
-        thumbnailImg.src = countryWikiResults.thumbnailImg;
+          //Create img element for thumbnail
+          var thumbnailImg = document.createElement("img");
+          thumbnailImg.src = countryWikiResults.thumbnailImg;
 
-        $("#wikiThumbnail").html(thumbnailImg);
-        $("#countryWiki").html(countryWikiResults.title);
-        $("#wikiSummary").html(countryWikiResults.summary);
-        $("#wikiFeature").html(countryWikiResults.feature);
+          $("#wikiThumbnail").html(thumbnailImg);
+          $("#countryWiki").html(countryWikiResults.title);
+          $("#wikiSummary").html(countryWikiResults.summary);
+          $("#wikiFeature").html(countryWikiResults.feature);
 
-        //Create element for the wiki link
-        var wikiLink = document.createElement("a");
-        wikiLink.href = countryWikiResults.wikipediaUrl;
-        wikiLink.target = "_blank";
-        wikiLink.textContent = "Click this link to load the Wikipedia Page";
+          //Create element for the wiki link
+          var wikiLink = document.createElement("a");
+          wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
+          wikiLink.target = "_blank";
+          wikiLink.textContent = "Click this link to load the Wikipedia Page";
 
-        $("#wikiUrl").html(wikiLink);
+          $("#wikiUrl").html(wikiLink);
 
-        $("#wikiModal").modal("show");
-      },
-      error: function (jqHXR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't get country wiki information: ",
-          jqHXR,
-          textStatus,
-          errorThrown
-        );
-      },
-    });
+          $("#wikiModal").modal("show");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't get country wiki information: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+      });
+    } catch {
+      alert("wiki call failed. error was thrown.");
+    } finally {
+      $("#spinner").hide();
+    }
   }
 ).addTo(map);

@@ -1,29 +1,33 @@
-<?php 
+<?php
 
-    $executionStartTime = microtime(true);
+$executionStartTime = microtime(true);
 
-    $url = 'https://api.opencagedata.com/geocode/v1/json?q=' . $_REQUEST['lat'] . '+' . $_REQUEST['lng'] . '&key=be0aa5008ed74764a77721198258cbbb';
+$placeName = $_REQUEST["placeName"];
 
-    $ch = curl_init($url);
+$apiKey = "be0aa5008ed74764a77721198258cbbb";
 
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_URL, $url);
+$url = "https://api.opencagedata.com/geocode/v1/json?q=$placeName&key=$apiKey";
 
-    $result = curl_exec($ch);
+$ch = curl_init($url);
 
-    curl_close($ch);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_URL, $url);
 
-    $decode = json_decode($result, true);
+$result = curl_exec($ch);
 
-    $output['status']['code'] = "200";
-    $output['status']['name'] = "ok";
-    $output['status']['description'] = "success";
-    $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-    $output['data'] = $decode;
+curl_close($ch);
 
-    header('Content-Type: application/json; charset=URF-8');
+$decode = json_decode($result, true);
 
-    header("Access-Control-Allow-Origin: *");
+$output['status']['code'] = "200";
+$output['status']['name'] = "ok";
+$output['status']['description'] = "success";
+$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
+$output['data'] = $decode;
 
-    echo json_encode($output);
+header('Content-Type: application/json; charset=URF-8');
+
+header("Access-Control-Allow-Origin: *");
+
+echo json_encode($output);
