@@ -40,6 +40,7 @@ body {
     font-size: 30px !important;
 }
 
+
 /*Loader*/
 
  #loader {
@@ -70,11 +71,15 @@ body {
   }
 
   tr:nth-child(odd) {
-    background-color: rgba(144, 238, 144, .5);
+    background-color: rgba(37, 166, 91, 0.4);
+    /* rgba(131, 188, 255, 0.5); */
   }
 
   .modal-header{
-    background-color: grey;
+    background-color: rgba(20, 108, 201, 0.8);
     color: white;
     text-decoration: solid;
   }
+
+
+  

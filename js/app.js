@@ -2,9 +2,15 @@ var countryBorder;
 var selectedCountryBorder;
 
 let currentCountryIso;
+let currentCountryIso3;
 let currentCapitalLatitude;
 let currentCapitalLongitude;
 let currentCapital;
+
+let currentCurrency;
+let currencyName;
+let currencyCode;
+let currencySymbol;
 
 var popup = L.popup();
 
@@ -176,9 +182,9 @@ function fetchAndSetBorderData() {
           // Display the country border on the map as a layer
           selectedCountryBorder = L.geoJSON(borderData, {
             style: {
-              color: "green",
+              color: "black",
+              fillColor: "#E83151",
               weight: 2,
-              opacity: 0.5,
             },
           }).addTo(map);
         }
@@ -225,6 +231,8 @@ function getCapitalFromIsoCode(isoCode) {
         result.data.forEach((country) => {
           const capitalCode = country.cca2;
           if (isoCode === capitalCode) {
+            currentCurrencySymbol = country.currencies[0].symbol;
+            currentCurrencyName = country.currencies[0].name;
             currentCapital = country.capital[0];
             forwardGeoEncodePlaceName(country.capital);
           }
@@ -333,6 +341,7 @@ L.easyButton(
           $("#countryName").html(countryInfo.countryName);
           $("#countryCapital").html(countryInfo.capital);
           $("#countryCode").html(countryInfo.countryCode);
+          $("#countryISO3").html(countryInfo.isoAlpha3);
           $("#countryContinent").html(countryInfo.continentName);
 
           if (countryInfo.population >= 1000000) {
@@ -488,9 +497,10 @@ L.easyButton(
       url: "http://localhost/projectGazetteer/php/currencyAPI.php?currentCurrency=GBP",
       method: "GET",
       dataType: "json",
-      // data: { TODO: finish setting the data up.
-
-      // },
+      data: {
+        //TODO: finish setting the data up.
+        country: currentCountryIso,
+      },
       beforeSend: function () {
         $("#spinner").show();
       },

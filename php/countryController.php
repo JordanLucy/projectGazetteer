@@ -49,7 +49,8 @@ class CountryController
         foreach ($this->data['features'] as $feature) {
             $countryName = $feature['properties']['name'];
             $isoCode = $feature['properties']['iso_a2'];
-            $outputData[] = array('countryName' => $countryName, 'iso_a2' => $isoCode);
+            $isoCode3 = $feature['properties']['iso_a3'];
+            $outputData[] = array('countryName' => $countryName, 'iso_a2' => $isoCode, 'iso_a3' => $isoCode3);
         }
         return $outputData; // Return the list of country codes
     }

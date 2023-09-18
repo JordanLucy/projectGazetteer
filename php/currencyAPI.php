@@ -2,7 +2,11 @@
 
 $executionStartTime = microtime(true);
 
-$url = 'https://openexchangerates.org/api/latest.json?app_id=2fe339a2d149470785e7b13471dd50d3';
+$countryCurrency = $_REQUEST['country'];
+
+$apiKey = "2fe339a2d149470785e7b13471dd50d3";
+
+$url = "https://openexchangerates.org/api/latest.json?base=$countryCurrency&app_id=$apiKey";
 
 $curl = curl_init($url);
 

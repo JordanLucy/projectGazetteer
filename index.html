@@ -26,6 +26,7 @@
 </head>
 
 <body class="little-weiner">
+
     <div id="select2-container">
         <select id="countryList" name="countryList" class="form-select floating-select"
             aria-label="Select Country"></select>
@@ -63,15 +64,19 @@
                                 <td id="countryCode"></td>
                             </tr>
                             <tr>
+                                <th scope="row">ISO3 Country Code:</th>
+                                <td id="countryISO3"></td>
+                            </tr>
+                            <tr>
                                 <th scope="row">Continent:</th>
                                 <td id="countryContinent"></td>
                             </tr>
                             <tr>
-                                <th scope="row">country Population:</th>
+                                <th scope="row">Country Population:</th>
                                 <td id="countryPopulation"></td>
                             </tr>
                             <tr>
-                                <th scope="row">Country total area in SqKm:</th>
+                                <th scope="row">Country total area:</th>
                                 <td id="countryArea"></td>
                             </tr>
                         </tbody>
@@ -79,7 +84,7 @@
                 </div>
                 <div class="modal-footer">
                     <p>Use the close button or click off the popup to leave.</p>
-                    <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -103,8 +108,8 @@
                 </div>
                 <div class="modal-footer">
                     <p>Use the close button or click off the popup to leave.</p>
-                    <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
-                </div>
+                    <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
+                </div>  
             </div>
         </div>
     </div>
@@ -151,7 +156,7 @@
                 </div>
                 <div class="modal-footer">
                     <p>Use the close button or click off the popup to leave.</p>
-                    <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -171,7 +176,7 @@
                         <!--Potential image-->
                         <tbody>
                             <tr>
-                                <th scope="row">Currency Name:</th>
+                                <th scope="row">Country Currency:</th>
                                 <td id="currencyName"></td>
                             </tr>
                             <tr>
@@ -179,7 +184,7 @@
                                 <td id="currencySymbol"></td>
                             </tr>
                             <tr>
-                                <th scope="row">Current currency rate:</th>
+                                <th scope="row">Country currency:</th>
                                 <td id="exchangeRate"></td>
                             </tr>
                             <tr>
@@ -193,7 +198,7 @@
 
                 <div class="modal-footer">
                     <p>Use the close button or click off the popup to leave.</p>
-                    <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
                 </div>
 
             </div>
@@ -218,7 +223,7 @@
                                 <td id="wikiThumbnail"></td>
                             </tr>
                             <tr>
-                                <th scope="row">Country:</th>
+                                <th scope="row">City:</th>
                                 <td id="countryWiki"></td>
                             </tr>
                             <tr>
@@ -238,7 +243,7 @@
                 </div>
                 <div class="modal-footer">
                     <p>Use the close button or click off the popup to leave.</p>
-                    <button type="button" class="btn btn-secondary closeBtn" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
