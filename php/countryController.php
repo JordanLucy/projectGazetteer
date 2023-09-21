@@ -21,7 +21,7 @@ class CountryController
 
     private function fetchFileData()
     {
-        $data = file_get_contents('../data/countryBorders.geo.json');
+        $data = file_get_contents('/data/countryBorders.geo.json');
         $jsonData = json_decode($data, true);
         return json_decode($data, true);
     }
