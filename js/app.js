@@ -1,5 +1,5 @@
-var countryBorder;
-var selectedCountryBorder;
+let countryBorder;
+let selectedCountryBorder;
 
 let currentCountryIso;
 let currentCountryIso3;
@@ -11,8 +11,10 @@ let currentCurrency;
 let currencyName;
 let currencyCode;
 let currencySymbol;
+let currencyExchangeRate;
+let exchangeRatesList;
 
-var popup = L.popup();
+let popup = L.popup();
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -25,15 +27,15 @@ $(".modal").on("hidden.bs.modal", function () {
 });
 
 // Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
-const map = L.map("map").setView([53.4084, -2.9916], 13);
+let map = L.map("map").setView([0, 0], 13);
 
-var mapTile = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+const mapTile = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution:
     '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
-var topographyMap = L.tileLayer(
+const topographyMap = L.tileLayer(
   "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
   {
     maxZoom: 17,
@@ -42,7 +44,7 @@ var topographyMap = L.tileLayer(
   }
 );
 
-googleHybrid = L.tileLayer(
+const googleHybrid = L.tileLayer(
   "http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
   {
     maxZoom: 20,
@@ -50,12 +52,15 @@ googleHybrid = L.tileLayer(
   }
 );
 
-googleSat = L.tileLayer("http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
-  maxZoom: 20,
-  subdomains: ["mt0", "mt1", "mt2", "mt3"],
-});
+const googleSat = L.tileLayer(
+  "http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  {
+    maxZoom: 20,
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+  }
+);
 
-var Esri_NatGeoWorldMap = L.tileLayer(
+const Esri_NatGeoWorldMap = L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
   {
     attribution:
@@ -65,7 +70,7 @@ var Esri_NatGeoWorldMap = L.tileLayer(
 );
 
 //Layer Controller
-var baseMaps = {
+let baseMaps = {
   "Normal MapTile": mapTile,
   "Topography Map": topographyMap,
   "Google Hybrid Map": googleHybrid,
@@ -73,7 +78,13 @@ var baseMaps = {
   "Nat Geo Map": Esri_NatGeoWorldMap,
 };
 
-var layerControl = L.control.layers(baseMaps).addTo(map);
+let layerControl = L.control.layers(baseMaps).addTo(map);
+
+var markers = new L.MarkerClusterGroup();
+
+// add more markers here...
+
+map.addLayer(markers);
 
 //Markers On Click
 
@@ -86,8 +97,33 @@ function onMapClick(e) {
 
 map.on("click", onMapClick);
 
-//Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/*
+What we want to do is, whenever the country is changed 
+ we need to find the capital (getCapitalFromIsoCode) -> currentCapital = getCapitalFromIsoCode(currentIsoCode)
+ then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (shoudl return an array/obj of long: bla, lat: bla)
+ then update our currentCapitalLatitude & currentCapitalLongitude: currentCapitalLatitude = currentCoords.long; currentCapitalLongitude = currentCoords.lat;
+*/
+//Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+$(document).ready(() => {
+  try {
+    fetchAndSetUserLocation();
+    fetchAndPopulateCountryList();
+    fetchAndSetBorderData();
 
+    $("#countryList").select2({
+      width: "50%",
+      height: "40px",
+    });
+
+    $("#countryList").on("change", () => {
+      fetchAndSetBorderData();
+    });
+  } catch {
+    alert("The document information hasn't loaded.");
+  }
+});
+
+//Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 const fetchCountryList = () => {
   return $.ajax({
     url: "http://localhost/projectGazetteer/php/countryController.php",
@@ -126,30 +162,6 @@ const populateCountryList = (data) => {
 
 // Create and target Country Border -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-/*
-What we want to do is, whenever the country is changed 
- we need to find the capital (getCapitalFromIsoCode) -> currentCapital = getCapitalFromIsoCode(currentIsoCode)
- then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (shoudl return an array/obj of long: bla, lat: bla)
- then update our currentCapitalLatitude & currentCapitalLongitude: currentCapitalLatitude = currentCoords.long; currentCapitalLongitude = currentCoords.lat;
-*/
-$(document).ready(() => {
-  try {
-    fetchAndSetUserLocation();
-    fetchAndPopulateCountryList();
-    fetchAndSetBorderData();
-    $("#countryList").select2({
-      width: "50%",
-      height: "40px",
-    });
-    $("#countryList").on("change", () => {
-      fetchAndSetBorderData();
-    });
-  } catch {
-    alert("Raggy, where is my datacles");
-  }
-  // TODO: dont have more than 1 on document ready function.
-});
-
 function fetchAndSetBorderData() {
   const selectedIso = $("#countryList").val();
   if (selectedIso) {
@@ -157,7 +169,7 @@ function fetchAndSetBorderData() {
     // try {
     // fetchAndSetBorderData();
     // fetchAndSetCurrentCapitalCoords();
-    // } catch { alert('big poo poo') }
+    // } catch { alert('Couldn't find and fetch border or capital coords data') }
 
     // TODO: separate this into its own function
     // TODO: add call to run lookup for capital co-ords
@@ -169,9 +181,11 @@ function fetchAndSetBorderData() {
       success: function (borderData) {
         console.log("Fetch Country Border Result: ", borderData);
         if (borderData) {
+          currentCountryIso3 = borderData.iso_a3;
+          console.log("current iso a3: ", currentCountryIso3);
           // Calculate the center of the country's border
-          const countryBorder = L.geoJSON(borderData);
-          const countryCenter = countryBorder.getBounds().getCenter();
+          const countryBorder = L.geoJSON(borderData.geometry);
+          let countryCenter = countryBorder.getBounds().getCenter();
 
           // Clear previous country border if exists
           clearSelectedCountryBorder();
@@ -180,7 +194,7 @@ function fetchAndSetBorderData() {
           map.setView(countryCenter, 5);
 
           // Display the country border on the map as a layer
-          selectedCountryBorder = L.geoJSON(borderData, {
+          selectedCountryBorder = L.geoJSON(borderData.geometry, {
             style: {
               color: "black",
               fillColor: "#E83151",
@@ -208,9 +222,17 @@ function forwardGeoEncodePlaceName(place) {
     success: function (result) {
       currentCapitalLatitude = result.data.results[0].geometry.lat;
       currentCapitalLongitude = result.data.results[0].geometry.lng;
-      console.log(result);
+      console.log("Open Cage api result: ", result);
+      fetchAndUpdateMarkers();
     },
   });
+  hideLoader();
+}
+
+function hideLoader() {
+  setTimeout(() => {
+    $("#preloaderContainer").fadeOut();
+  }, 500);
 }
 
 function clearSelectedCountryBorder() {
@@ -220,9 +242,10 @@ function clearSelectedCountryBorder() {
   }
 }
 
+let currentCurrencyDetails;
 function getCapitalFromIsoCode(isoCode) {
   $.ajax({
-    url: "http://localhost/projectGazetteer/php/restCountryInfo.php?",
+    url: "http://localhost/projectGazetteer/php/restCountryInfo.php", // Why are we doing this more than once when return wont change
     method: "GET",
     dataType: "json",
     success: function (result) {
@@ -231,8 +254,11 @@ function getCapitalFromIsoCode(isoCode) {
         result.data.forEach((country) => {
           const capitalCode = country.cca2;
           if (isoCode === capitalCode) {
-            currentCurrencySymbol = country.currencies[0].symbol;
-            currentCurrencyName = country.currencies[0].name;
+            currentCurrencyDetails = Object.entries(country.currencies)[0];
+            console.log(
+              "The current Currency Details: ",
+              currentCurrencyDetails
+            );
             currentCapital = country.capital[0];
             forwardGeoEncodePlaceName(country.capital);
           }
@@ -258,16 +284,17 @@ function fetchAndSetUserLocation() {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
+    setDefaultLocation("UK");
   }
 
   async function successFunction(position) {
-    var latitude = position.coords.latitude;
-    var longitude = position.coords.longitude;
+    let latitude = position.coords.latitude;
+    let longitude = position.coords.longitude;
 
     try {
       // Using openCage API
-      var apiKey = "be0aa5008ed74764a77721198258cbbb";
-      var url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
+      let apiKey = "be0aa5008ed74764a77721198258cbbb";
+      let url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -280,8 +307,8 @@ function fetchAndSetUserLocation() {
       // console.log("This is the current Country ISO: ", currentCountryIso); TODO: Fix this to actually have a value so it can be reused.
 
       //Update the Select Dropdown
-      var selectDropDown = document.getElementById("countryList");
-      for (var i = 0; i < selectDropDown.options.length; i++) {
+      let selectDropDown = document.getElementById("countryList");
+      for (let i = 0; i < selectDropDown.options.length; i++) {
         if (selectDropDown.options[i].value === countryIso) {
           selectDropDown.selectedIndex = i;
           break;
@@ -292,10 +319,10 @@ function fetchAndSetUserLocation() {
       map.setView([latitude, longitude], 5);
       fetchAndSetBorderData();
       //Create LatLng object
-      var userLatLng = L.latLng(latitude, longitude);
+      let userLatLng = L.latLng(latitude, longitude);
 
       //Add marker and circle for user's location
-      var radius = position.coords.accuracy;
+      let radius = position.coords.accuracy;
       L.marker([latitude, longitude]).addTo(map);
 
       L.circle(userLatLng, { radius: radius }).addTo(map);
@@ -306,74 +333,98 @@ function fetchAndSetUserLocation() {
 
   function errorFunction() {
     console.log("Unable to retrieve your location");
+    //Set default location to UK
+    setDefaultLocation("UK");
+  }
+
+  function setDefaultLocation(countryIso) {
+    currentCountryIso = countryIso;
+
+    let selectDropDown = document.getElementById("countryList");
+    for (let i = 0; i < selectDropDown.options.length; i++) {
+      if (selectDropDown.options[i].value === countryIso) {
+        selectDropDown.selectedIndex = i;
+        break;
+      }
+    }
+    map.setView([51.5074, -0.1278], 5);
+
+    fetchAndSetBorderData();
   }
 }
 
 // General Country Info API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
   '<i class="fa-solid fa-info fa-lg" style="color: #000000;"></i>',
-  function () {
-    $.ajax({
-      url: "http://localhost/projectGazetteer/php/generalCountryInfo.php",
-      method: "GET",
-      dataType: "json",
-      data: {
-        //TODO: finish setting the data up.
-        country: currentCountryIso,
-      },
-      beforeSend: function () {
-        $("#spinner").show();
-      },
-      success: function (result) {
-        $("#spinner").hide();
-        console.log(result);
+  () => {
+    try {
+      $.ajax({
+        url: "http://localhost/projectGazetteer/php/generalCountryInfo.php",
+        method: "GET",
+        dataType: "json",
+        data: {
+          //TODO: finish setting the data up.
+          country: currentCountryIso,
+        },
+        beforeSend: function () {
+          $("#spinner").show();
+        },
+        success: function (result) {
+          console.log(result);
 
-        // Check if the 'geonames' array exists and is not empty
-        if (
-          result.data &&
-          result.data.geonames &&
-          result.data.geonames.length > 0
-        ) {
-          // Access the first country object in the 'geonames' array
-          var countryInfo = result.data.geonames[0];
+          // Check if the 'geonames' array exists and is not empty
+          if (
+            result.data &&
+            result.data.geonames &&
+            result.data.geonames.length > 0
+          ) {
+            // Access the first country object in the 'geonames' array
+            let countryInfo = result.data.geonames[0];
 
-          // Access and display country information
-          $("#countryName").html(countryInfo.countryName);
-          $("#countryCapital").html(countryInfo.capital);
-          $("#countryCode").html(countryInfo.countryCode);
-          $("#countryISO3").html(countryInfo.isoAlpha3);
-          $("#countryContinent").html(countryInfo.continentName);
+            // Access and display country information
+            $("#countryName").html(countryInfo.countryName);
+            $("#countryCapital").html(countryInfo.capital);
+            $("#countryCode").html(countryInfo.countryCode);
+            $("#countryISO3").html(countryInfo.isoAlpha3);
+            $("#countryContinent").html(countryInfo.continentName);
 
-          if (countryInfo.population >= 1000000) {
-            var populationMillions =
-              (countryInfo.population / 1000000).toFixed(2) + "M";
-            $("#countryPopulation").html(populationMillions);
+            if (countryInfo.population >= 1000000) {
+              let populationMillions =
+                (countryInfo.population / 1000000).toFixed(2) + "M";
+              $("#countryPopulation").html(populationMillions);
+            } else {
+              $("#countryPopulation").html(countryInfo.population);
+            }
+            $("#countryArea").html(countryInfo.areaInSqKm + `SqKm`);
+
+            // Show the modal
+            $("#countryModal").modal("show");
           } else {
-            $("#countryPopulation").html(countryInfo.population);
+            console.log("No country info found in the response.");
           }
-          $("#countryArea").html(countryInfo.areaInSqKm + `SqKm`);
-
-          // Show the modal
-          $("#countryModal").modal("show");
-        } else {
-          console.log("No country info found in the response.");
-        }
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't get general country info: ",
-          jqXHR,
-          textStatus,
-          errorThrown
-        );
-      },
-    });
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't get general country info: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+      });
+    } catch {
+      alert(
+        "An Error has occured when trying to fetch the country information!"
+      );
+    } finally {
+      $("#spinner").hide();
+    }
   }
 ).addTo(map);
 
 // News modal ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-newspaper fa-lg" style="color: #000000"></i>',
+  '<i class="fa-solid fa-newspaper" style="color: #000000"></i>',
   () => {
     try {
       $.ajax({
@@ -419,7 +470,7 @@ L.easyButton(
         },
       });
     } catch {
-      alert("an error has occured when trying to fetch the news oh no!");
+      alert("An Error has occured when trying to fetch the news!");
     } finally {
       $("#spinner").hide();
     }
@@ -428,102 +479,128 @@ L.easyButton(
 
 // Weather API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-cloud fa-lg" style="color: #000000;"></i>',
-  function () {
+  '<i class="fa-solid fa-cloud" style="color: #000000;"></i>',
+  () => {
     if (!currentCapitalLatitude || !currentCapitalLongitude) {
-      alert("you have been a big bonobo idiot loser get a job.");
+      alert("Neither capital latitude or longitude is available!");
       return;
     }
+    try {
+      $.ajax({
+        url: "http://localhost/projectGazetteer/php/weatherAPI.php",
+        method: "GET",
+        dataType: "json",
+        data: {
+          lat: currentCapitalLatitude,
+          lon: currentCapitalLongitude,
+        },
+        beforeSend: function () {
+          $("#spinner").show(); // TODO: Fix spinner position
+        },
+        success: function (result) {
+          console.log("Weather API Call Result: ", result);
 
-    $.ajax({
-      url: "http://localhost/projectGazetteer/php/weatherAPI.php",
-      method: "GET",
-      dataType: "json",
-      data: {
-        lat: currentCapitalLatitude,
-        lon: currentCapitalLongitude,
-      },
-      beforeSend: function () {
-        $("#spinner").show(); // TODO: Fix spinner position
-      },
-      success: function (result) {
-        $("#spinner").hide();
-        console.log("Weather API Call Result: ", result);
+          const sunriseTime = new Date(
+            result.data.weather.sys.sunrise * 1000
+          ).toLocaleTimeString();
+          const sunsetTime = new Date(
+            result.data.weather.sys.sunset * 1000
+          ).toLocaleTimeString();
 
-        const sunriseTime = new Date(
-          result.data.weather.sys.sunrise * 1000
-        ).toLocaleTimeString();
-        const sunsetTime = new Date(
-          result.data.weather.sys.sunset * 1000
-        ).toLocaleTimeString();
+          $("#weatherIcon").attr(
+            "src",
+            "http://openweathermap.org/img/w/" +
+              result.data.weather.weather[0].icon +
+              ".png"
+          );
 
-        $("#tempInfo").html(
-          Math.round(result.data.weather.main.temp) + "&deg;"
-        );
-        $("#tempFeel").html(
-          Math.round(result.data.weather.main.feels_like) + "&deg;"
-        );
-        $("#sunriseInfo").html(sunriseTime);
-        $("#sunsetInfo").html(sunsetTime);
-        $("#windspeedInfo").html(
-          result.data.weather.wind.speed +
-            "mph at " +
-            result.data.weather.wind.deg +
-            "°"
-        );
-        $("#currentWeatherConditions").html(
-          result.data.weather.weather[0].description
-        );
+          $("#tempInfo").html(
+            Math.round(result.data.weather.main.temp) + "&deg;"
+          );
+          $("#tempFeel").html(
+            Math.round(result.data.weather.main.feels_like) + "&deg;"
+          );
+          $("#cloudCover").html(result.data.weather.clouds.all + "%");
+          $("#sunriseInfo").html(sunriseTime);
+          $("#sunsetInfo").html(sunsetTime);
+          $("#windspeedInfo").html(
+            result.data.weather.wind.speed +
+              "mph at " +
+              result.data.weather.wind.deg +
+              "°"
+          );
+          $("#currentWeatherConditions").html(
+            result.data.weather.weather[0].description
+          );
 
-        $("#weatherModal").modal("show");
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't fetch weather information: ",
-          jqXHR,
-          textStatus,
-          errorThrown
-        );
-      },
-    });
+          $("#weatherModal").modal("show");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't fetch weather information: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+      });
+    } catch {
+      alert(
+        "An Error has occured when trying to fetch the weather information!"
+      );
+    } finally {
+      $("#spinner").hide();
+    }
   }
 ).addTo(map);
 
 // Currency API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
   '<i class="fa-solid fa-coins fa-lg" style="color: #000000;"></i>',
-  function () {
-    $.ajax({
-      url: "http://localhost/projectGazetteer/php/currencyAPI.php?currentCurrency=GBP",
-      method: "GET",
-      dataType: "json",
-      data: {
-        //TODO: finish setting the data up.
-        country: currentCountryIso,
-      },
-      beforeSend: function () {
-        $("#spinner").show();
-      },
-      success: function (result) {
-        $("#spinner").hide();
-        console.log(result);
+  () => {
+    try {
+      $.ajax({
+        url: "http://localhost/projectGazetteer/php/currencyAPI.php", // TODO: only look up once as will never change
+        method: "GET",
+        dataType: "json",
+        beforeSend: function () {
+          $("#spinner").show();
+        },
+        success: function (result) {
+          if (result.status.code === "200" && result.data) {
+            exchangeRatesList = result.data.exchangeRates;
 
-        $("#base").html("USD"); //Base currency is USD  TODO: Change this to a proper currency converter
-        $("#currencyName").html("GBP"); //Target is GBP
-        $("#currencySymbol").html("£"); //Currency symbol for GBP
-        // $("#exchangeRate").html(result.data.rates.GBP);
+            console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
 
-        $("#currencyModal").modal("show");
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't get currency information: ",
-          jqXHR,
-          textStatus,
-          errorThrown
-        );
-      },
-    });
+            currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
+
+            $("#currencyName").html(currentCurrencyDetails[1].name); //Target is GBP
+            $("#currencySymbol").html(currentCurrencyDetails[1].symbol); //Currency symbol for GBP
+            $("#exchangeRate").html(
+              `$1 USD  = ${currentCurrencyDetails[1].symbol}${currencyExchangeRate}`
+            );
+          } else {
+            console.error("Failed to fetch currency information");
+          }
+
+          $("#currencyModal").modal("show");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't get currency information: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+      });
+    } catch {
+      alert(
+        "An Error has occured when trying to fetch the country information!"
+      );
+    } finally {
+      $("#spinner").hide();
+    }
   }
 ).addTo(map);
 
@@ -532,7 +609,7 @@ L.easyButton(
   '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000000;"></i>',
   () => {
     if (!currentCountryIso || !currentCapital) {
-      alert("No cunt or cap set.");
+      alert("No country ISO or capital has been set.");
     }
     try {
       console.log("currentCountryIso", currentCountryIso);
@@ -552,10 +629,10 @@ L.easyButton(
         success: function (result) {
           console.log("Wiki api call result: ", result);
 
-          var countryWikiResults = result.data.geonames[0];
+          let countryWikiResults = result.data.geonames[0];
 
           //Create img element for thumbnail
-          var thumbnailImg = document.createElement("img");
+          let thumbnailImg = document.createElement("img");
           thumbnailImg.src = countryWikiResults.thumbnailImg;
 
           $("#wikiThumbnail").html(thumbnailImg);
@@ -564,7 +641,7 @@ L.easyButton(
           $("#wikiFeature").html(countryWikiResults.feature);
 
           //Create element for the wiki link
-          var wikiLink = document.createElement("a");
+          let wikiLink = document.createElement("a");
           wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
           wikiLink.target = "_blank";
           wikiLink.textContent = "Click this link to load the Wikipedia Page";
@@ -583,9 +660,45 @@ L.easyButton(
         },
       });
     } catch {
-      alert("wiki call failed. error was thrown.");
+      alert("An Error has occured when trying to fetch Wikipedia information!");
     } finally {
       $("#spinner").hide();
     }
   }
 ).addTo(map);
+
+function fetchAndUpdateMarkers() {
+  $.ajax({
+    url: "http://localhost/projectGazetteer/php/infoMarkers.php",
+    method: "GET",
+    dataType: "json",
+    data: {
+      latitude: currentCapitalLatitude,
+      longitude: currentCapitalLongitude,
+    },
+    beforeSend: function (jqXHR, settings) {
+      console.log(settings.url);
+    },
+    success: function (result) {
+      console.log("all the landmarks", result);
+      result.data.results.forEach((entry) => {
+        let marker = L.marker([
+          entry.geometry.location.lat,
+          entry.geometry.location.lng,
+        ]).bindPopup(entry.name);
+        markers.addLayer(marker);
+      });
+
+      // Add the marker cluster group to the map
+      map.addLayer(markers);
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.log(
+        "Couldn't retrieve wiki Markers:",
+        jqXHR,
+        textStatus,
+        errorThrown
+      );
+    },
+  });
+}

@@ -1,6 +1,5 @@
 <?php
 
-// need to load the file
 // if no get request we return all country names + iso 
 // if $_GET['iso'] then we return all border points for that country after searching through file data.
 

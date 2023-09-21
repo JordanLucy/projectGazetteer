@@ -10,7 +10,8 @@ $jsonData = json_decode($data, true);
 
 foreach ($jsonData['features'] as $feature) {
     if ($feature['properties']['iso_a2'] === $isoCode) {
-        $border = $feature['geometry'];
+        $border['geometry'] = $feature['geometry'];
+        $border['iso_a3'] = $feature['properties']['iso_a3'];
         echo json_encode($border);
         break;
     }

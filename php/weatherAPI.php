@@ -25,7 +25,6 @@ $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime)
 $output['data']['weather'] = $weather;
 
 header('Content-Type: application/json; charset=UTF-8');
-
 header("Access-Control-Allow-Origin: *");
 
 echo json_encode($output);

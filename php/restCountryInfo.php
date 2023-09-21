@@ -2,10 +2,7 @@
 
 $executionStartTime = microtime(true);
 
-// $selectedCountryIso = $_REQUEST['iso'];
-
 $url = 'https://restcountries.com/v3.1/all';
-/*  $url = 'https://restcountries.com/v3.1/all/  . $selectedCountryIso'; */
 
 $curl = curl_init($url);
 
@@ -25,7 +22,6 @@ $output['status']['description'] = "success";
 $output['data'] = $restCountries;
 
 header('Content-Type: application/json; charset=UTF-8');
-
 header("Access-Control-Allow-Origin: *");
 
 echo json_encode($output);
