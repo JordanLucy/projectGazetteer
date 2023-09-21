@@ -126,7 +126,7 @@ $(document).ready(() => {
 //Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 const fetchCountryList = () => {
   return $.ajax({
-    url: "http://localhost/projectGazetteer/php/countryController.php",
+    url: "/php/countryController.php",
     method: "GET",
     dataType: "json",
   });
@@ -175,7 +175,7 @@ function fetchAndSetBorderData() {
     // TODO: add call to run lookup for capital co-ords
     // Make an AJAX request to fetch country border data
     $.ajax({
-      url: `http://localhost/projectGazetteer/php/countryBorder.php?iso=${selectedIso}`,
+      url: `/php/countryBorder.php?iso=${selectedIso}`,
       method: "GET",
       dataType: "json",
       success: function (borderData) {
@@ -215,7 +215,7 @@ function fetchAndSetBorderData() {
 
 function forwardGeoEncodePlaceName(place) {
   $.ajax({
-    url: "http://localhost/projectGazetteer/php/openCageAPI.php",
+    url: "/php/openCageAPI.php",
     method: "GET",
     dataType: "json",
     data: { placeName: encodeURIComponent(place[0]) },
@@ -245,7 +245,7 @@ function clearSelectedCountryBorder() {
 let currentCurrencyDetails;
 function getCapitalFromIsoCode(isoCode) {
   $.ajax({
-    url: "http://localhost/projectGazetteer/php/restCountryInfo.php", // Why are we doing this more than once when return wont change
+    url: "/php/restCountryInfo.php", // Why are we doing this more than once when return wont change
     method: "GET",
     dataType: "json",
     success: function (result) {
@@ -359,7 +359,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: "http://localhost/projectGazetteer/php/generalCountryInfo.php",
+        url: "/php/generalCountryInfo.php",
         method: "GET",
         dataType: "json",
         data: {
@@ -424,11 +424,11 @@ L.easyButton(
 
 // News modal ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-newspaper" style="color: #000000"></i>',
+  '<i class="fa-solid fa-newspaper fa-lg" style="color: #000000"></i>',
   () => {
     try {
       $.ajax({
-        url: "http://localhost/projectGazetteer/php/countryNews.php",
+        url: "/php/countryNews.php",
         method: "GET",
         dataType: "json",
         data: {
@@ -479,7 +479,7 @@ L.easyButton(
 
 // Weather API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-cloud" style="color: #000000;"></i>',
+  '<i class="fa-solid fa-cloud fa-lg" style="color: #000000;"></i>',
   () => {
     if (!currentCapitalLatitude || !currentCapitalLongitude) {
       alert("Neither capital latitude or longitude is available!");
@@ -487,7 +487,7 @@ L.easyButton(
     }
     try {
       $.ajax({
-        url: "http://localhost/projectGazetteer/php/weatherAPI.php",
+        url: "/php/weatherAPI.php",
         method: "GET",
         dataType: "json",
         data: {
@@ -560,7 +560,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: "http://localhost/projectGazetteer/php/currencyAPI.php", // TODO: only look up once as will never change
+        url: "/php/currencyAPI.php", // TODO: only look up once as will never change
         method: "GET",
         dataType: "json",
         beforeSend: function () {
@@ -615,7 +615,7 @@ L.easyButton(
       console.log("currentCountryIso", currentCountryIso);
       console.log("currentCapital", currentCapital);
       $.ajax({
-        url: "http://localhost/projectGazetteer/php/countryWiki.php",
+        url: "/php/countryWiki.php",
         method: "GET",
         dataType: "json",
         data: {
@@ -669,7 +669,7 @@ L.easyButton(
 
 function fetchAndUpdateMarkers() {
   $.ajax({
-    url: "http://localhost/projectGazetteer/php/infoMarkers.php",
+    url: "/php/infoMarkers.php",
     method: "GET",
     dataType: "json",
     data: {
