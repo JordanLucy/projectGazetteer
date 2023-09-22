@@ -80,7 +80,13 @@ let baseMaps = {
 
 let layerControl = L.control.layers(baseMaps).addTo(map);
 
-var markers = new L.MarkerClusterGroup();
+var markers = new L.MarkerClusterGroup({ icon: hotelMarker });
+
+let hotelMarker = L.ExtraMarkers.icon({
+  icon: "fa-hotel",
+  shape: "square",
+  prefix: "fa",
+});
 
 // add more markers here...
 
