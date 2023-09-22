@@ -457,7 +457,7 @@ L.easyButton(
 
           if (!result?.data?.articles?.length > 0 ?? false) {
             console.log("No articles found");
-            alert("WEE WOO WEE WOO BLYATTTTTT");
+            alert("there is no articles found for this country");
             return;
           }
           $("#news-tbody").html("");
