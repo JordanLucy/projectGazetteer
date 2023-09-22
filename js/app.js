@@ -16,8 +16,8 @@ let exchangeRatesList;
 
 let popup = L.popup();
 
-// const urlPath = "";
-const urlPath = "http://localhost/projectGazetteer";
+const urlPath = "";
+// const urlPath = "http://localhost/projectGazetteer";
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -307,7 +307,7 @@ function fetchAndSetUserLocation() {
       const data = await response.json();
       console.log("User Location Data: ", data);
 
-      let countryIso = data.results[0].components["ISO_3166-1_apha-2"];
+      let countryIso = data.results[0].components["ISO_3166-1_alpha-2"];
       console.log("This is the countryISO", countryIso);
 
       // Update currentCountryIso
@@ -587,8 +587,8 @@ L.easyButton(
 
             currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
 
-            $("#currencyName").html(currentCurrencyDetails[1].name); //Target is GBP
-            $("#currencySymbol").html(currentCurrencyDetails[1].symbol); //Currency symbol for GBP
+            $("#currencyName").html(currentCurrencyDetails[1].name);
+            $("#currencySymbol").html(currentCurrencyDetails[1].symbol);
             $("#exchangeRate").html(
               `$1 USD  = ${currentCurrencyDetails[1].symbol}${currencyExchangeRate}`
             );
@@ -632,7 +632,6 @@ L.easyButton(
         method: "GET",
         dataType: "json",
         data: {
-          // TODO: finish setting the data up.
           country: currentCountryIso,
           countryCapital: currentCapital,
         },
@@ -679,6 +678,8 @@ L.easyButton(
     }
   }
 ).addTo(map);
+
+/* Create Map markers based on location*/
 
 function fetchAndUpdateMarkers() {
   $.ajax({
