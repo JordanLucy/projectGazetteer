@@ -16,6 +16,9 @@ let exchangeRatesList;
 
 let popup = L.popup();
 
+// const urlPath = "";
+const urlPath = "http://localhost/projectGazetteer";
+
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
   $("#spinnerContainer").show();
@@ -80,13 +83,7 @@ let baseMaps = {
 
 let layerControl = L.control.layers(baseMaps).addTo(map);
 
-var markers = new L.MarkerClusterGroup({ icon: hotelMarker });
-
-let hotelMarker = L.ExtraMarkers.icon({
-  icon: "fa-hotel",
-  shape: "square",
-  prefix: "fa",
-});
+var markers = new L.MarkerClusterGroup();
 
 // add more markers here...
 
@@ -132,7 +129,7 @@ $(document).ready(() => {
 //Country Dropdown List -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 const fetchCountryList = () => {
   return $.ajax({
-    url: "/php/countryController.php",
+    url: `${urlPath}/php/countryController.php`,
     method: "GET",
     dataType: "json",
   });
@@ -181,7 +178,7 @@ function fetchAndSetBorderData() {
     // TODO: add call to run lookup for capital co-ords
     // Make an AJAX request to fetch country border data
     $.ajax({
-      url: `/php/countryBorder.php?iso=${selectedIso}`,
+      url: `${urlPath}/php/countryBorder.php?iso=${selectedIso}`,
       method: "GET",
       dataType: "json",
       success: function (borderData) {
@@ -221,7 +218,7 @@ function fetchAndSetBorderData() {
 
 function forwardGeoEncodePlaceName(place) {
   $.ajax({
-    url: "/php/openCageAPI.php",
+    url: `${urlPath}/php/openCageAPI.php`,
     method: "GET",
     dataType: "json",
     data: { placeName: encodeURIComponent(place[0]) },
@@ -251,7 +248,7 @@ function clearSelectedCountryBorder() {
 let currentCurrencyDetails;
 function getCapitalFromIsoCode(isoCode) {
   $.ajax({
-    url: "/php/restCountryInfo.php", // Why are we doing this more than once when return wont change
+    url: `${urlPath}/php/restCountryInfo.php`, // Why are we doing this more than once when return wont change
     method: "GET",
     dataType: "json",
     success: function (result) {
@@ -290,12 +287,16 @@ function fetchAndSetUserLocation() {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
-    setDefaultLocation("UK");
+    // setDefaultLocation("UK");
   }
 
+  //Default co-ords to UK
+  let latitude = 51.5074;
+  let longitude = -0.1278;
+
   async function successFunction(position) {
-    let latitude = position.coords.latitude;
-    let longitude = position.coords.longitude;
+    latitude = position.coords.latitude;
+    longitude = position.coords.longitude;
 
     try {
       // Using openCage API
@@ -307,10 +308,11 @@ function fetchAndSetUserLocation() {
       console.log("User Location Data: ", data);
 
       let countryIso = data.results[0].components["ISO_3166-1_apha-2"];
+      console.log("This is the countryISO", countryIso);
 
       // Update currentCountryIso
       currentCountryIso = countryIso;
-      // console.log("This is the current Country ISO: ", currentCountryIso); TODO: Fix this to actually have a value so it can be reused.
+      console.log("This is the current Country ISO: ", currentCountryIso); //TODO: Fix this to actually have a value so it can be reused.
 
       //Update the Select Dropdown
       let selectDropDown = document.getElementById("countryList");
@@ -353,10 +355,14 @@ function fetchAndSetUserLocation() {
         break;
       }
     }
-    map.setView([51.5074, -0.1278], 5);
+    map.setView([latitude, longitude], 5);
 
     fetchAndSetBorderData();
   }
+}
+
+function addCommas(number) {
+  return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 // General Country Info API call ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -365,7 +371,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: "/php/generalCountryInfo.php",
+        url: `${urlPath}/php/generalCountryInfo.php`,
         method: "GET",
         dataType: "json",
         data: {
@@ -401,7 +407,8 @@ L.easyButton(
             } else {
               $("#countryPopulation").html(countryInfo.population);
             }
-            $("#countryArea").html(countryInfo.areaInSqKm + `SqKm`);
+            let area = Math.floor(countryInfo.areaInSqKm);
+            $("#countryArea").html(addCommas(area) + `SqKm`);
 
             // Show the modal
             $("#countryModal").modal("show");
@@ -434,7 +441,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: "/php/countryNews.php",
+        url: `${urlPath}/php/countryNews.php`,
         method: "GET",
         dataType: "json",
         data: {
@@ -493,7 +500,7 @@ L.easyButton(
     }
     try {
       $.ajax({
-        url: "/php/weatherAPI.php",
+        url: `${urlPath}/php/weatherAPI.php`,
         method: "GET",
         dataType: "json",
         data: {
@@ -566,7 +573,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: "/php/currencyAPI.php", // TODO: only look up once as will never change
+        url: `${urlPath}/php/currencyAPI.php`, // TODO: only look up once as will never change
         method: "GET",
         dataType: "json",
         beforeSend: function () {
@@ -621,7 +628,7 @@ L.easyButton(
       console.log("currentCountryIso", currentCountryIso);
       console.log("currentCapital", currentCapital);
       $.ajax({
-        url: "/php/countryWiki.php",
+        url: `${urlPath}/php/countryWiki.php`,
         method: "GET",
         dataType: "json",
         data: {
@@ -675,7 +682,7 @@ L.easyButton(
 
 function fetchAndUpdateMarkers() {
   $.ajax({
-    url: "/php/infoMarkers.php",
+    url: `${urlPath}/php/infoMarkers.php`,
     method: "GET",
     dataType: "json",
     data: {
@@ -688,10 +695,17 @@ function fetchAndUpdateMarkers() {
     success: function (result) {
       console.log("all the landmarks", result);
       result.data.results.forEach((entry) => {
-        let marker = L.marker([
-          entry.geometry.location.lat,
-          entry.geometry.location.lng,
-        ]).bindPopup(entry.name);
+        let hotelIcon = L.ExtraMarkers.icon({
+          icon: "fa-hotel",
+          prefix: "fa",
+          iconColor: "blue",
+          markerColor: "white",
+        });
+
+        let marker = L.marker(
+          [entry.geometry.location.lat, entry.geometry.location.lng],
+          { icon: hotelIcon }
+        ).bindPopup(entry.name);
         markers.addLayer(marker);
       });
 
