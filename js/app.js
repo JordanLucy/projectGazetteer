@@ -16,8 +16,8 @@ let exchangeRatesList;
 
 let popup = L.popup();
 
-// const urlPath = "";
-const urlPath = "http://localhost/projectGazetteer";
+const urlPath = "";
+// const urlPath = "http://localhost/projectGazetteer";
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -290,6 +290,7 @@ function fetchAndSetUserLocation() {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
+    setDefaultLocation("UK");
   }
 
   //Default co-ords to UK
