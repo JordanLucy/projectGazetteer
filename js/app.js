@@ -293,7 +293,7 @@ async function fetchAndSetUserLocation() {
     setDefaultLocation("GB");
   }
 
-  //Default co-ords to UK
+  //Default co-ords to GB
   let latitude = 51.5074;
   let longitude = -0.1278;
 
@@ -342,11 +342,12 @@ async function fetchAndSetUserLocation() {
       L.circle(userLatLng, { radius: radius }).addTo(map);
     } catch (error) {
       console.log("Error fetching reverse geocoding data", error);
+      setDefaultLocation("GB");
     }
   }
 
   function errorFunction() {
-    console.log("Unable to retrieve your location");
+    alert("Unable to retrieve your location, using default location instead.");
     //Set default location to UK
     setDefaultLocation("GB");
   }
