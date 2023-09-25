@@ -18,8 +18,8 @@ let longitude = -0.1278;
 
 let popup = L.popup();
 
-// const urlPath = "";
-const urlPath = "http://localhost/projectGazetteer";
+const urlPath = "";
+// const urlPath = "http://localhost/projectGazetteer";
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
