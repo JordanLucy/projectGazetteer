@@ -16,8 +16,8 @@ let exchangeRatesList;
 
 let popup = L.popup();
 
-const urlPath = "";
-// const urlPath = "http://localhost/projectGazetteer";
+// const urlPath = "";
+const urlPath = "http://localhost/projectGazetteer";
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -85,11 +85,7 @@ let layerControl = L.control.layers(baseMaps).addTo(map);
 
 var markers = new L.MarkerClusterGroup();
 
-// add more markers here...
-
-map.addLayer(markers);
-
-//Markers On Click
+//Marker location On Click
 
 function onMapClick(e) {
   popup
@@ -103,7 +99,7 @@ map.on("click", onMapClick);
 /*
 What we want to do is, whenever the country is changed 
  we need to find the capital (getCapitalFromIsoCode) -> currentCapital = getCapitalFromIsoCode(currentIsoCode)
- then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (shoudl return an array/obj of long: bla, lat: bla)
+ then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (should return an array/obj of long: bla, lat: bla)
  then update our currentCapitalLatitude & currentCapitalLongitude: currentCapitalLatitude = currentCoords.long; currentCapitalLongitude = currentCoords.lat;
 */
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -117,6 +113,8 @@ $(document).ready(() => {
       width: "50%",
       height: "40px",
     });
+
+    $("#countryList").val();
 
     $("#countryList").on("change", () => {
       fetchAndSetBorderData();
@@ -169,6 +167,7 @@ function fetchAndSetBorderData() {
   const selectedIso = $("#countryList").val();
   if (selectedIso) {
     currentCountryIso = selectedIso;
+    clearMarkers();
     // try {
     // fetchAndSetBorderData();
     // fetchAndSetCurrentCapitalCoords();
@@ -243,6 +242,10 @@ function clearSelectedCountryBorder() {
     map.removeLayer(selectedCountryBorder);
     selectedCountryBorder = null;
   }
+}
+
+function clearMarkers() {
+  markers.clearLayers();
 }
 
 let currentCurrencyDetails;
