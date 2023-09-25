@@ -13,11 +13,13 @@ let currencyCode;
 let currencySymbol;
 let currencyExchangeRate;
 let exchangeRatesList;
+let latitude = 51.5074;
+let longitude = -0.1278;
 
 let popup = L.popup();
 
-const urlPath = "";
-// const urlPath = "http://localhost/projectGazetteer";
+// const urlPath = "";
+const urlPath = "http://localhost/projectGazetteer";
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -96,26 +98,17 @@ function onMapClick(e) {
 
 map.on("click", onMapClick);
 
-/*
-What we want to do is, whenever the country is changed 
- we need to find the capital (getCapitalFromIsoCode) -> currentCapital = getCapitalFromIsoCode(currentIsoCode)
- then find its co-ords (getCoOrdsFromPlaceName) -> currentCoords = getCoOrdsFromPlaceName(currentCapital) (should return an array/obj of long: bla, lat: bla)
- then update our currentCapitalLatitude & currentCapitalLongitude: currentCapitalLatitude = currentCoords.long; currentCapitalLongitude = currentCoords.lat;
-*/
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 $(document).ready(() => {
   try {
     fetchAndSetUserLocation();
     fetchAndPopulateCountryList();
-    fetchAndSetBorderData();
+    // fetchAndSetBorderData();
 
     $("#countryList").select2({
       width: "50%",
       height: "40px",
     });
-
-    $("#countryList").val();
-
     $("#countryList").on("change", () => {
       fetchAndSetBorderData();
     });
@@ -168,14 +161,7 @@ function fetchAndSetBorderData() {
   if (selectedIso) {
     currentCountryIso = selectedIso;
     clearMarkers();
-    // try {
-    // fetchAndSetBorderData();
-    // fetchAndSetCurrentCapitalCoords();
-    // } catch { alert('Couldn't find and fetch border or capital coords data') }
 
-    // TODO: separate this into its own function
-    // TODO: add call to run lookup for capital co-ords
-    // Make an AJAX request to fetch country border data
     $.ajax({
       url: `${urlPath}/php/countryBorder.php?iso=${selectedIso}`,
       method: "GET",
@@ -285,89 +271,79 @@ function getCapitalFromIsoCode(isoCode) {
 }
 
 //Geolocation of user -----------------------------------------------------------------------------------------------------------------------------
-async function fetchAndSetUserLocation() {
+function fetchAndSetUserLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
-    console.log("Gelocation is not supported by this browser.");
+    console.log("Geolocation is not supported by this browser.");
     setDefaultLocation("GB");
   }
+}
 
-  //Default co-ords to GB
-  let latitude = 51.5074;
-  let longitude = -0.1278;
+function successFunction(position) {
+  latitude = position?.coords?.latitude ?? latitude;
+  longitude = position?.coords?.longitude ?? longitude;
 
-  async function successFunction(position) {
-    latitude = position.coords.latitude;
-    longitude = position.coords.longitude;
+  console.log("users latlng", latitude, longitude);
 
-    try {
-      // Using openCage API
-      let apiKey = "be0aa5008ed74764a77721198258cbbb";
-      let url = `https://api.opencagedata.com/geocode/v1/json?key=${apiKey}&q=${latitude},${longitude}&no_annotations=1`;
+  try {
+    $.ajax({
+      url: `${urlPath}/php/openCageAPI.php`,
+      method: "GET",
+      dataType: "json",
+      data: { placeName: encodeURIComponent(`${latitude},${longitude}`) },
+      success: function (result) {
+        console.log("User Location Data: ", result);
 
-      const response = await fetch(url);
-      const data = await response.json();
-      console.log("User Location Data: ", data);
+        let countryIso =
+          result.data.results[0].components["ISO_3166-1_alpha-2"];
+        console.log("This is the countryISO", countryIso);
 
-      let countryIso = data.results[0].components["ISO_3166-1_alpha-2"];
-      console.log("This is the countryISO", countryIso);
+        // Update currentCountryIso
+        currentCountryIso = countryIso;
+        console.log("This is the current Country ISO: ", currentCountryIso);
 
-      // Update currentCountryIso
-      currentCountryIso = countryIso;
-      console.log("This is the current Country ISO: ", currentCountryIso); //TODO: Fix this to actually have a value so it can be reused.
+        //Change the Select2 container to update on the users country.
+        $("#countryList").val(currentCountryIso).trigger("change.select2");
 
-      //Change the Select2 container to update on the users country.
-      $("#countryList").val(currentCountryIso).trigger("change");
+        //Set the map view to user's location
+        map.setView([latitude, longitude], 5);
+        fetchAndSetBorderData();
+        //Create LatLng object
+        let userLatLng = L.latLng(latitude, longitude);
 
-      //Update the Select Dropdown
-      let selectDropDown = document.getElementById("countryList");
-      for (let i = 0; i < selectDropDown.options.length; i++) {
-        if (selectDropDown.options[i].value === countryIso) {
-          selectDropDown.selectedIndex = i;
-          break;
-        }
-      }
+        //Add marker and circle for user's location
+        let radius = position?.coords?.accuracy ?? 1000;
+        L.marker([latitude, longitude]).addTo(map);
 
-      //Set the map view to user's location
-      map.setView([latitude, longitude], 5);
-      fetchAndSetBorderData();
-      //Create LatLng object
-      let userLatLng = L.latLng(latitude, longitude);
-
-      //Add marker and circle for user's location
-      let radius = position.coords.accuracy;
-      L.marker([latitude, longitude]).addTo(map);
-
-      L.circle(userLatLng, { radius: radius }).addTo(map);
-    } catch (error) {
-      console.log("Error fetching reverse geocoding data", error);
-      setDefaultLocation("GB");
-    }
-  }
-
-  function errorFunction() {
-    alert("Unable to retrieve your location, using default location instead.");
-    //Set default location to UK
+        L.circle(userLatLng, { radius: radius }).addTo(map);
+      },
+      error: function (error) {
+        console.log("Error fetching reverse geocoding data", error);
+        setDefaultLocation("GB");
+      },
+    });
+  } catch (error) {
+    console.log("Error fetching reverse geocoding data", error);
     setDefaultLocation("GB");
   }
+}
 
-  function setDefaultLocation(countryIso) {
-    if (!countryIso) {
-      countryIso = "GB"; // Set the default to GB
-    }
-    currentCountryIso = countryIso;
+function errorFunction() {
+  alert("Unable to retrieve your location, using default location instead.");
+  //Set default location to UK
+  setDefaultLocation("GB");
+  successFunction();
+}
 
-    let selectDropDown = document.getElementById("countryList");
-    for (let i = 0; i < selectDropDown.options.length; i++) {
-      if (selectDropDown.options[i].value === countryIso) {
-        selectDropDown.selectedIndex = i;
-        break;
-      }
-    }
-    fetchAndSetBorderData();
-    map.setView([latitude, longitude], 5);
+function setDefaultLocation(countryIso) {
+  if (!countryIso) {
+    countryIso = "GB"; // Set the default to GB
   }
+  currentCountryIso = countryIso;
+  $("#countryList").val(currentCountryIso);
+
+  map.setView([latitude, longitude], 5);
 }
 
 function addCommas(number) {
@@ -433,12 +409,14 @@ L.easyButton(
             errorThrown
           );
         },
+        complete: function () {
+          $("#spinner").hide();
+        },
       });
     } catch {
       alert(
         "An Error has occured when trying to fetch the country information!"
       );
-    } finally {
       $("#spinner").hide();
     }
   }
@@ -490,10 +468,12 @@ L.easyButton(
             errorThrown
           );
         },
+        complete: function () {
+          $("#spinner").hide();
+        },
       });
     } catch {
       alert("An Error has occured when trying to fetch the news!");
-    } finally {
       $("#spinner").hide();
     }
   }
@@ -517,7 +497,7 @@ L.easyButton(
           lon: currentCapitalLongitude,
         },
         beforeSend: function () {
-          $("#spinner").show(); // TODO: Fix spinner position
+          $("#spinner").show();
         },
         success: function (result) {
           console.log("Weather API Call Result: ", result);
@@ -565,12 +545,14 @@ L.easyButton(
             errorThrown
           );
         },
+        complete: function () {
+          $("#spinner").hide();
+        },
       });
     } catch {
       alert(
         "An Error has occured when trying to fetch the weather information!"
       );
-    } finally {
       $("#spinner").hide();
     }
   }
@@ -615,12 +597,14 @@ L.easyButton(
             errorThrown
           );
         },
+        complete: function () {
+          $("#spinner").hide();
+        },
       });
     } catch {
       alert(
         "An Error has occured when trying to fetch the country information!"
       );
-    } finally {
       $("#spinner").hide();
     }
   }
@@ -679,10 +663,12 @@ L.easyButton(
             errorThrown
           );
         },
+        complete: function () {
+          $("#spinner").hide();
+        },
       });
     } catch {
       alert("An Error has occured when trying to fetch Wikipedia information!");
-    } finally {
       $("#spinner").hide();
     }
   }

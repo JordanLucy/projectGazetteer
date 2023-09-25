@@ -41,7 +41,7 @@
         <select id="countryList" name="countryList" class="form-select floating-select"
             aria-label="Select Country"></select>
     </div>
-    <div class="d-flex justify-content-center">
+    <div class="d-flex justify-content-center" id="spinner-container">
         <div id="spinner" class="spinner-border text-success" role="status" style="display: none">
             <span class="visually-hidden">Loading...</span>
         </div>
@@ -241,54 +241,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger closeBtn" data-bs-dismiss="modal">Close</button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    
-    <!--Hotel modal API------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------>
-    <div id="hotelModal" class="modal fade" tabindex="-1" aria-labelledby="hotel-api" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title" id="hotel-api">Hotel Information</h2>
-
-                </div>
-                <div class="modal-body">
-                    <table class="table">
-                        <tbody>
-                            <tr>
-                                <th scope="row">Current Temperature:</th>
-                                <td class="currentTemp"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Sunrise Time:</th>
-                                <td class="sunriseTime"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Sunset Time:</th>
-                                <td class="sunsetTime"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Windspeed:</th>
-                                <td class="currentWindspeed"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Weather Conditions:</th>
-                                <td class="currentWeather"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Sun Cream:</th>
-                                <td class="sunCream"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn">Close</button>
-                </div>
-
             </div>
         </div>
     </div>
