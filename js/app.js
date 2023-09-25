@@ -290,7 +290,7 @@ function fetchAndSetUserLocation() {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
-    setDefaultLocation("UK");
+    setDefaultLocation();
   }
 
   //Default co-ords to UK
@@ -348,10 +348,13 @@ function fetchAndSetUserLocation() {
   function errorFunction() {
     console.log("Unable to retrieve your location");
     //Set default location to UK
-    setDefaultLocation("UK");
+    setDefaultLocation();
   }
 
   function setDefaultLocation(countryIso) {
+    if (!countryIso) {
+      countryIso = "GB"; // Set the default to GB
+    }
     currentCountryIso = countryIso;
 
     let selectDropDown = document.getElementById("countryList");
