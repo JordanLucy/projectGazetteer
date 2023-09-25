@@ -364,9 +364,8 @@ function fetchAndSetUserLocation() {
         break;
       }
     }
-    map.setView([latitude, longitude], 5);
-
     fetchAndSetBorderData();
+    map.setView([latitude, longitude], 5);
   }
 }
 
