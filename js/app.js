@@ -285,12 +285,12 @@ function getCapitalFromIsoCode(isoCode) {
 }
 
 //Geolocation of user -----------------------------------------------------------------------------------------------------------------------------
-function fetchAndSetUserLocation() {
+async function fetchAndSetUserLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
-    setDefaultLocation();
+    setDefaultLocation("GB");
   }
 
   //Default co-ords to UK
@@ -348,7 +348,7 @@ function fetchAndSetUserLocation() {
   function errorFunction() {
     console.log("Unable to retrieve your location");
     //Set default location to UK
-    setDefaultLocation();
+    setDefaultLocation("GB");
   }
 
   function setDefaultLocation(countryIso) {
