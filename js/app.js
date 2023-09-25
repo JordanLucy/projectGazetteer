@@ -316,6 +316,7 @@ function fetchAndSetUserLocation() {
       currentCountryIso = countryIso;
       console.log("This is the current Country ISO: ", currentCountryIso); //TODO: Fix this to actually have a value so it can be reused.
 
+      //Change the Select2 container to update on the users country.
       $("#countryList").val(currentCountryIso).trigger("change");
 
       //Update the Select Dropdown
