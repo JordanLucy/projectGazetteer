@@ -290,7 +290,6 @@ function fetchAndSetUserLocation() {
     navigator.geolocation.getCurrentPosition(successFunction, errorFunction);
   } else {
     console.log("Gelocation is not supported by this browser.");
-    // setDefaultLocation("UK");
   }
 
   //Default co-ords to UK
@@ -316,6 +315,8 @@ function fetchAndSetUserLocation() {
       // Update currentCountryIso
       currentCountryIso = countryIso;
       console.log("This is the current Country ISO: ", currentCountryIso); //TODO: Fix this to actually have a value so it can be reused.
+
+      $("#countryList").val(currentCountryIso).trigger("change");
 
       //Update the Select Dropdown
       let selectDropDown = document.getElementById("countryList");
