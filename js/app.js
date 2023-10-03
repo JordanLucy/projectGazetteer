@@ -103,7 +103,6 @@ $(document).ready(() => {
   try {
     fetchAndSetUserLocation();
     fetchAndPopulateCountryList();
-    // fetchAndSetBorderData();
 
     $("#countryList").select2({
       width: "50%",
@@ -195,7 +194,7 @@ function fetchAndSetBorderData() {
         console.error("Error fetching country border data:", error);
       },
     });
-    getCapitalFromIsoCode(currentCountryIso); // this func needs to return the capital
+    getCapitalFromIsoCode(currentCountryIso);
   } else {
     clearSelectedCountryBorder();
   }
@@ -237,7 +236,7 @@ function clearMarkers() {
 let currentCurrencyDetails;
 function getCapitalFromIsoCode(isoCode) {
   $.ajax({
-    url: `${urlPath}/php/restCountryInfo.php`, // Why are we doing this more than once when return wont change
+    url: `${urlPath}/php/restCountryInfo.php`,
     method: "GET",
     dataType: "json",
     success: function (result) {
@@ -360,7 +359,6 @@ L.easyButton(
         method: "GET",
         dataType: "json",
         data: {
-          //TODO: finish setting the data up.
           country: currentCountryIso,
         },
         beforeSend: function () {
@@ -432,7 +430,6 @@ L.easyButton(
         method: "GET",
         dataType: "json",
         data: {
-          //TODO: finish setting the data up.
           country: currentCountryIso,
         },
         beforeSend: function () {
@@ -564,7 +561,7 @@ L.easyButton(
   () => {
     try {
       $.ajax({
-        url: `${urlPath}/php/currencyAPI.php`, // TODO: only look up once as will never change
+        url: `${urlPath}/php/currencyAPI.php`,
         method: "GET",
         dataType: "json",
         beforeSend: function () {
@@ -675,7 +672,6 @@ L.easyButton(
 ).addTo(map);
 
 /* Create Map markers based on location*/
-
 function fetchAndUpdateMarkers() {
   $.ajax({
     url: `${urlPath}/php/infoMarkers.php`,
