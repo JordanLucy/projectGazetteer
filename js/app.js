@@ -18,8 +18,14 @@ let longitude = -0.1278;
 
 let popup = L.popup();
 
-const urlPath = "";
-// const urlPath = "http://localhost/projectGazetteer";
+// const urlPath = "";
+const urlPath = "http://localhost/projectGazetteer";
+
+//Preload and cache images
+function preloadImage(url) {
+  const img = new Image();
+  img.src = url;
+}
 
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
@@ -32,7 +38,7 @@ $(".modal").on("hidden.bs.modal", function () {
 });
 
 // Map Setup and Overlays ------------------------------------------------------------------------------------------------------------------------------
-let map = L.map("map").setView([0, 0], 13);
+let map = L.map("map");
 
 const mapTile = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -87,17 +93,6 @@ let layerControl = L.control.layers(baseMaps).addTo(map);
 
 var markers = new L.MarkerClusterGroup();
 
-//Marker location On Click
-
-function onMapClick(e) {
-  popup
-    .setLatLng(e.latlng)
-    .setContent("You clicked the map at " + e.latlng.toString())
-    .openOn(map);
-}
-
-map.on("click", onMapClick);
-
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 $(document).ready(() => {
   try {
@@ -130,8 +125,7 @@ const fetchAndPopulateCountryList = () => {
     .then((data) => {
       console.log("Fetch Country List Result: ", data);
       if (data.status.code === "200" && data.data) {
-        populateCountryList(data.data);
-        // Loop data into select via ID target
+        populateCountryList(data.data); // Loop data into select via ID target
       } else {
         throw new Error("Unable to fetch country list");
       }
@@ -141,6 +135,7 @@ const fetchAndPopulateCountryList = () => {
     });
 };
 
+//Sort through country list and populate
 const populateCountryList = (data) => {
   data.sort((a, b) => a.countryName.localeCompare(b.countryName));
 
@@ -165,29 +160,25 @@ function fetchAndSetBorderData() {
       url: `${urlPath}/php/countryBorder.php?iso=${selectedIso}`,
       method: "GET",
       dataType: "json",
-      success: function (borderData) {
-        console.log("Fetch Country Border Result: ", borderData);
-        if (borderData) {
-          currentCountryIso3 = borderData.iso_a3;
+      success: function (feature) {
+        console.log("Fetch Country Border Result: ", feature);
+        if (feature) {
+          currentCountryIso3 = feature.properties.iso_a3;
           console.log("current iso a3: ", currentCountryIso3);
-          // Calculate the center of the country's border
-          const countryBorder = L.geoJSON(borderData.geometry);
-          let countryCenter = countryBorder.getBounds().getCenter();
 
           // Clear previous country border if exists
           clearSelectedCountryBorder();
 
-          // Set the map's view to the country's center as defined above.
-          map.setView(countryCenter, 5);
-
           // Display the country border on the map as a layer
-          selectedCountryBorder = L.geoJSON(borderData.geometry, {
+          selectedCountryBorder = L.geoJSON(feature, {
             style: {
               color: "black",
               fillColor: "#E83151",
               weight: 2,
             },
           }).addTo(map);
+          // Set the map's view to the country's boundary.
+          map.fitBounds(selectedCountryBorder.getBounds());
         }
       },
       error: function (error) {
@@ -305,17 +296,8 @@ function successFunction(position) {
         //Change the Select2 container to update on the users country.
         $("#countryList").val(currentCountryIso).trigger("change.select2");
 
-        //Set the map view to user's location
-        map.setView([latitude, longitude], 5);
+        //Set the map view
         fetchAndSetBorderData();
-        //Create LatLng object
-        let userLatLng = L.latLng(latitude, longitude);
-
-        //Add marker and circle for user's location
-        let radius = position?.coords?.accuracy ?? 1000;
-        L.marker([latitude, longitude]).addTo(map);
-
-        L.circle(userLatLng, { radius: radius }).addTo(map);
       },
       error: function (error) {
         console.log("Error fetching reverse geocoding data", error);
@@ -351,7 +333,7 @@ function addCommas(number) {
 
 // General Country Info API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-info fa-lg" style="color: #000000;"></i>',
+  '<i class="fa-solid fa-info fa-lg" style="color: #000;"></i>',
   () => {
     try {
       $.ajax({
@@ -379,9 +361,11 @@ L.easyButton(
             // Access and display country information
             $("#countryName").html(countryInfo.countryName);
             $("#countryCapital").html(countryInfo.capital);
+            $("#countryContinent").html(countryInfo.continentName);
             $("#countryCode").html(countryInfo.countryCode);
             $("#countryISO3").html(countryInfo.isoAlpha3);
-            $("#countryContinent").html(countryInfo.continentName);
+            $("#countryPostCode").html(countryInfo.postalCodeFormat);
+            $("#countryLanguages").html(countryInfo.languages);
 
             if (countryInfo.population >= 1000000) {
               let populationMillions =
@@ -422,7 +406,7 @@ L.easyButton(
 
 // News modal ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-newspaper fa-lg" style="color: #000000"></i>',
+  '<i class="fa-solid fa-newspaper fa-lg" style="color: #000"></i>',
   () => {
     try {
       $.ajax({
@@ -437,7 +421,7 @@ L.easyButton(
           console.log(currentCountryIso);
         },
         success: function (result) {
-          console.log(result);
+          console.log("This is the new article result: ", result);
 
           if (!result?.data?.articles?.length > 0 ?? false) {
             console.log("No articles found");
@@ -446,16 +430,36 @@ L.easyButton(
           }
           $("#news-tbody").html("");
 
+          function limitWords(text, maxWords) {
+            return (
+              text.split(/\s+/).slice(0, maxWords).join(" ") +
+              (text.split(/\s+/).length > maxWords ? "..." : "")
+            );
+          }
+
           for (let i = 0; i < result.data.articles.length; i++) {
+            let title = result.data.articles[i].title;
+            let maxWords = 10; // Set the maximum number of words
+
+            let truncatedTitle = limitWords(title, maxWords);
+
             $("#news-tbody").append(
               `<tr>
                 <td><img style="height:100px;object-fit:cover;width:150px;" src="${result.data.articles[i].image}"></td>
-                <td id="newsTitle"><a target="_blank" href="${result.data.articles[i].url}">${result.data.articles[i].title}</a></td>
+                <td id="newsTitle"><a target="_blank" href="${result.data.articles[i].url}">${truncatedTitle}</a>
+                <br>
+                <br><em>
+                ${result.data.articles[i].source.name}</em>
+                </td> 
             </tr>`
             );
           }
 
           $("#newsModal").modal("show");
+
+          result.data.articles.forEach((article) => {
+            preloadImage(article.image);
+          });
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
@@ -469,7 +473,8 @@ L.easyButton(
           $("#spinner").hide();
         },
       });
-    } catch {
+    } catch (error) {
+      console.log("News Error: ", error);
       alert("An Error has occured when trying to fetch the news!");
       $("#spinner").hide();
     }
@@ -478,7 +483,7 @@ L.easyButton(
 
 // Weather API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-cloud fa-lg" style="color: #000000;"></i>',
+  '<i class="fa-solid fa-cloud fa-lg" style="color: #000;"></i>',
   () => {
     if (!currentCapitalLatitude || !currentCapitalLongitude) {
       alert("Neither capital latitude or longitude is available!");
@@ -557,7 +562,7 @@ L.easyButton(
 
 // Currency API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-solid fa-coins fa-lg" style="color: #000000;"></i>',
+  '<i class="fa-solid fa-coins fa-lg" style="color: #000;"></i>',
   () => {
     try {
       $.ajax({
@@ -609,7 +614,7 @@ L.easyButton(
 
 // Wikipedia API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
-  '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000000;"></i>',
+  '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000;"></i>',
   () => {
     if (!currentCountryIso || !currentCapital) {
       alert("No country ISO or capital has been set.");
@@ -666,6 +671,65 @@ L.easyButton(
       });
     } catch {
       alert("An Error has occured when trying to fetch Wikipedia information!");
+      $("#spinner").hide();
+    }
+  }
+).addTo(map);
+
+L.easyButton(
+  '<i class="fa-solid fa-calendar fa-lg" style="color: #000" ></i>',
+  () => {
+    try {
+      $.ajax({
+        url: `${urlPath}/php/bankHolidays.php`,
+        method: "GET",
+        dataType: "json",
+        data: {
+          country: currentCountryIso,
+        },
+        beforeSend: function () {
+          $("#spinner").show();
+        },
+        success: function (result) {
+          console.log("Modal Information", result);
+
+          const bankHolidayData = result.data;
+          $("#holidays-tbody").html("");
+
+          for (let i = 0; i < bankHolidayData.length; i++) {
+            const holiday = bankHolidayData[i];
+            const formattedDate = new Date(holiday.date).toString(
+              "ddd MMM dd yyyy"
+            );
+
+            $("#holidays-tbody").append(
+              `<tr>
+              <td>${formattedDate}</td>
+              <td>${holiday.name} known as </td>
+              <td>${holiday.localName}</td>
+              </tr>`
+            );
+          }
+
+          // Set the modal content after the loop has finished
+          $("#bankHolidayModal").modal("show");
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+          console.log(
+            "Couldn't get Modal information: ",
+            jqXHR,
+            textStatus,
+            errorThrown
+          );
+        },
+        complete: function () {
+          $("#spinner").hide();
+        },
+      });
+    } catch {
+      alert(
+        "An Error has occured when trying to fetch bank holiday information!"
+      );
       $("#spinner").hide();
     }
   }

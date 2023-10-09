@@ -5,14 +5,12 @@ header("Access-Control-Allow-Origin: *");
 
 $isoCode = $_GET['iso']; // Get the ISO code from the query parameter
 
-$data = file_get_contents('../data/countryBorders.geo.json');
-$jsonData = json_decode($data, true);
+$jsonData = json_decode(file_get_contents('../data/countryBorders.geo.json'), true);
 
 foreach ($jsonData['features'] as $feature) {
     if ($feature['properties']['iso_a2'] === $isoCode) {
-        $border['geometry'] = $feature['geometry'];
-        $border['iso_a3'] = $feature['properties']['iso_a3'];
-        echo json_encode($border);
+        $feature['iso_a3'] = $feature['properties']['iso_a3'];
+        echo json_encode($feature);
         break;
     }
 }

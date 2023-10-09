@@ -72,16 +72,6 @@ body {
     line-height: 50px; /*  easyButton's width default */
   }
 
-  tr:nth-child(odd) {
-    background-color: rgba(37, 166, 91, 0.4);
-  }
-
-  .modal-header{
-    background-color: rgba(20, 108, 201, 0.8);
-    color: white;
-    text-decoration: solid;
-  }
-
 #weatherTable td {
     width: 45%;
 }
