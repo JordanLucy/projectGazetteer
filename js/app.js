@@ -96,6 +96,7 @@ var markers = new L.MarkerClusterGroup();
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 $(document).ready(() => {
   try {
+    fetchAndUpdateMarkers();
     fetchAndSetUserLocation();
     fetchAndPopulateCountryList();
 
@@ -742,26 +743,59 @@ function fetchAndUpdateMarkers() {
     method: "GET",
     dataType: "json",
     data: {
-      latitude: currentCapitalLatitude,
-      longitude: currentCapitalLongitude,
+      country: currentCountryIso,
     },
     beforeSend: function (jqXHR, settings) {
       console.log(settings.url);
     },
     success: function (result) {
       console.log("all the landmarks", result);
-      result.data.results.forEach((entry) => {
-        let hotelIcon = L.ExtraMarkers.icon({
-          icon: "fa-hotel",
+
+      const filteredCities = result.data.cities.geonames.filter(
+        (city) => city.population > 150000
+      );
+      console.log("These are the filtered cities", filteredCities);
+
+      filteredCities.forEach((entry) => {
+        let cityIcon = L.ExtraMarkers.icon({
           prefix: "fa",
+          icon: "fa-city",
           iconColor: "blue",
           markerColor: "white",
+          shape: "square",
         });
 
-        let marker = L.marker(
-          [entry.geometry.location.lat, entry.geometry.location.lng],
-          { icon: hotelIcon }
-        ).bindPopup(entry.name);
+        let marker = L.marker([entry.lat, entry.lng], {
+          icon: cityIcon,
+        }).bindTooltip(
+          "<div class='col text-center'><strong>" +
+            entry.name +
+            "</strong><br><i>(" +
+            numeral(entry.population).format("0,0") +
+            ")</i></div>",
+          { direction: "top", sticky: true }
+        );
+        markers.addLayer(marker);
+      });
+
+      result.data.airports.geonames.forEach((entry) => {
+        let airportIcon = L.ExtraMarkers.icon({
+          prefix: "fa",
+          icon: "fa-plane",
+          iconColor: "white",
+          markerColor: "green",
+        });
+
+        let marker = L.marker([entry.lat, entry.lng], {
+          icon: airportIcon,
+        }).bindTooltip(
+          "<div class='coll text-center'><strong>" +
+            entry.name +
+            "</stong></div>",
+          { direction: "top", sticky: true }
+        );
+
+        // Add the marker to the markers layer
         markers.addLayer(marker);
       });
 

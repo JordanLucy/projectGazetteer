@@ -3,6 +3,7 @@
     "jquery": "^3.7.1",
     "leaflet": "^1.9.4",
     "leaflet-easybutton": "^2.4.0",
+    "numeral": "^2.0.6",
     "select2": "^4.1.0-rc.0"
   }
 }
