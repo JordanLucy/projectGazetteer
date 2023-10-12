@@ -694,7 +694,7 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log("Modal Information", result);
+          console.log("Bank Holiday Modal Information", result);
 
           const bankHolidayData = result.data;
           $("#holidays-tbody").html("");
@@ -708,8 +708,7 @@ L.easyButton(
             $("#holidays-tbody").append(
               `<tr>
               <td>${formattedDate}</td>
-              <td>${holiday.name} known as </td>
-              <td>${holiday.localName}</td>
+              <td>${holiday.name}</td>
               </tr>`
             );
           }
