@@ -81,3 +81,7 @@ body {
     margin-right: 5px;
 }
 
+#weathermodal.modal-content {
+    background-image: url(images\modal-images\background-weather.gif);
+    background-size: cover;
+}

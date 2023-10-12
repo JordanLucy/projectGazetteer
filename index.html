@@ -142,7 +142,7 @@
     </div>
 
     <!--Weather modal API-->
-    <div id="weatherModal" class="modal fade" tabindex="-1" aria-labelledby="weather-api" aria-hidden="true">
+    <div id="weatherModal" class="modal fade" tabindex="-1" aria-labelledby="weather-api" aria-hidden="true" >
         <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
@@ -150,39 +150,56 @@
                     <button type="button" class="btn-close border border-2 border-white" aria-label="Close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body short-modal">
-
-                    <table id="weatherTable" class="table">
-                        <tbody>
-                            <tr>
-                                <th scope="row"><img id="weatherIcon">Weather Conditions</th>
-                                <td id="currentWeatherConditions"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row" ><img class="img-responsive" src="images\modal-images\temperature.png">Current Temperature</th>
-                                <td id="tempInfo"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Real Feel</th>
-                                <td id="tempFeel"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><img class="modalImages" src="images/modal-images/clouds.svg" >Cloud Cover</th>
-                                <td id="cloudCover"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><img class="modalImages" src="images/modal-images/sunrise.png" >Sunrise</th>
-                                <td id="sunriseInfo"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><img class="modalImages" src="images/modal-images/sunset.png" >Sunset</th>
-                                <td id="sunsetInfo"></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><img class="modalImages" src="images/modal-images/wind.png" >Windspeed</th>
-                                <td id="windspeedInfo"></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="row">
+                        <div class="col border m-2">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <p class="fw-bold fs-5 mt-1">TODAY</p>
+                                </div>
+                                <div class="col text-end">
+                                    <span id="currentTime" class="fw-bold fs-5"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col text-center m-3">
+                                    <p id="currentWeatherConditions" class="fw-bold fs-5"></p>
+                                </div>
+                                <div class="col text-center">
+                                    <img src="" alt="weather Icon" id="weatherIcon" class="img-fluid mt-0">
+                                </div>
+                                <div class="col text-center">
+                                    <p class="fw-bold fs-4 mb-0"><i class="fa-solid fa-temperature-high fa-sm" style="color: red; margin-right: 5px;"></i><span id="todayMaxtemp"></span></p>
+                                    <p class=" fs-4 mb-0"><i class="fa-solid fa-temperature-low fa-sm" style="color: blue; margin-right: 5px;"></i><span id="todayMinTemp"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col border m-2 p-2">
+                            <p id="day1Date" class="fw-bold fs-5 text-center"></p>
+                            <div class="row">
+                                <div class="col text-center">
+                                    <p class="fw-bold fs-4 mb-0"><i class="fa-solid fa-temperature-high fa-sm" style="color: red; margin-right: 5px;"></i><span id="day1Maxtemp"></span></p>
+                                    <p class="fs-4 mb-0"><i class="fa-solid fa-temperature-low fa-sm" style="color: blue; margin-right: 5px;"></i><span id="day1Mintemp"></span></p>
+                                </div>
+                                <div class="col text-center">
+                                    <img src="" alt="Weather Icon" id="day1Icon" class="img-fluid mt-0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col border m-2 p-2">
+                            <p id="day2Date" class="fw-bold fs-5 text-center"></p>
+                            <div class="row">
+                                <div class="col text-center">
+                                    <p class="fw-bold fs-4 mb-0"><i class="fa-solid fa-temperature-high fa-sm" style="color: red; margin-right: 5px;"></i><span id="day2Maxtemp"></span></p>
+                                    <p class="fs-4 mb-0"><i class="fa-solid fa-temperature-low fa-sm" style="color: blue; margin-right: 5px;"></i><span id="day2Mintemp"></span></p>
+                                </div>
+                                <div class="col text-center">
+                                    <img src="" alt="weather Icon" id="day2Icon" class="img-fluid mt-0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Close</button>
@@ -314,3 +331,44 @@
 
 
 </html>
+
+
+
+<!-- 
+                    <table id="weatherTable" class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">TODAY</th>
+                            </tr>
+                            <tr>
+                                <th scope="row"><img id="weatherIcon"></th>
+                            </tr>
+                            <tr>
+                                <th scope="row"></th>
+                                <td id="currentWeatherConditions"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row" ><img class="img-responsive" src="images\modal-images\temperature.png">Current Temperature</th>
+                                <td id="currentTemp"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Real Feel</th>
+                                <td id="tempFeel"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><img class="modalImages" src="images/modal-images/clouds.svg" >Cloud Cover</th>
+                                <td id="cloudCover"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><img class="modalImages" src="images/modal-images/sunrise.png" >Sunrise</th>
+                                <td id="sunriseInfo"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><img class="modalImages" src="images/modal-images/sunset.png" >Sunset</th>
+                                <td id="sunsetInfo"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><img class="modalImages" src="images/modal-images/wind.png" >Windspeed</th>
+                                <td id="windspeedInfo"></td>
+                            </tr>
+                        </tbody> -->

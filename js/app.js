@@ -21,12 +21,6 @@ let popup = L.popup();
 // const urlPath = "";
 const urlPath = "http://localhost/projectGazetteer";
 
-//Preload and cache images
-function preloadImage(url) {
-  const img = new Image();
-  img.src = url;
-}
-
 //Loading Spinner
 $(".modal").on("show.bs.modal", function () {
   $("#spinnerContainer").show();
@@ -96,7 +90,6 @@ var markers = new L.MarkerClusterGroup();
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 $(document).ready(() => {
   try {
-    fetchAndUpdateMarkers();
     fetchAndSetUserLocation();
     fetchAndPopulateCountryList();
 
@@ -454,13 +447,12 @@ L.easyButton(
                 </td> 
             </tr>`
             );
+            const img = new Image();
+            img.src = result.data.articles[i].image;
+            console.log("Image preloaded:", img.src);
           }
 
           $("#newsModal").modal("show");
-
-          result.data.articles.forEach((article) => {
-            preloadImage(article.image);
-          });
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
@@ -505,37 +497,47 @@ L.easyButton(
         success: function (result) {
           console.log("Weather API Call Result: ", result);
 
-          const sunriseTime = new Date(
-            result.data.weather.sys.sunrise * 1000
-          ).toLocaleTimeString();
-          const sunsetTime = new Date(
-            result.data.weather.sys.sunset * 1000
-          ).toLocaleTimeString();
+          const weatherData = result.data.forecast.forecastday;
 
-          $("#weatherIcon").attr(
-            "src",
-            "http://openweathermap.org/img/w/" +
-              result.data.weather.weather[0].icon +
-              ".png"
-          );
-
-          $("#tempInfo").html(
-            Math.round(result.data.weather.main.temp) + "&deg;"
-          );
-          $("#tempFeel").html(
-            Math.round(result.data.weather.main.feels_like) + "&deg;"
-          );
-          $("#cloudCover").html(result.data.weather.clouds.all + "%");
-          $("#sunriseInfo").html(sunriseTime);
-          $("#sunsetInfo").html(sunsetTime);
-          $("#windspeedInfo").html(
-            result.data.weather.wind.speed +
-              "mph at " +
-              result.data.weather.wind.deg +
-              "°"
-          );
+          // const sunriseTime = new Date(
+          //   result.data.weather.sys.sunrise * 1000
+          // ).toLocaleTimeString();
+          // const sunsetTime = new Date(
+          //   result.data.weather.sys.sunset * 1000
+          // ).toLocaleTimeString();
           $("#currentWeatherConditions").html(
-            result.data.weather.weather[0].description
+            result.data.current.condition.text
+          );
+          $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
+          $("#todayMaxtemp").html(
+            Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
+          );
+          $("#todayMinTemp").html(
+            Math.round(weatherData[0].day.mintemp_c) + "&deg;"
+          );
+          // Forecastday1
+          $("#day1Date").html(
+            Date.parse(weatherData[1].date).toString("ddd dS")
+          );
+          // $("#day1WeatherConditions").html(weatherData[1].day.condition.text);
+          $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
+          $("#day1Maxtemp").html(
+            Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
+          );
+          $("#day1Mintemp").html(
+            Math.round(weatherData[1].day.mintemp_c) + "&deg;"
+          );
+          // Forecastday2
+          $("#day2Date").html(
+            Date.parse(weatherData[2].date).toString("ddd dS")
+          );
+          // $("#day2WeatherConditions").html(weatherData[2].day.condition.text);
+          $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
+          $("#day2Maxtemp").html(
+            Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
+          );
+          $("#day2Mintemp").html(
+            Math.round(weatherData[2].day.mintemp_c) + "&deg;"
           );
 
           $("#weatherModal").modal("show");
@@ -738,77 +740,103 @@ L.easyButton(
 
 /* Create Map markers based on location*/
 function fetchAndUpdateMarkers() {
-  $.ajax({
-    url: `${urlPath}/php/infoMarkers.php`,
-    method: "GET",
-    dataType: "json",
-    data: {
-      country: currentCountryIso,
-    },
-    beforeSend: function (jqXHR, settings) {
-      console.log(settings.url);
-    },
-    success: function (result) {
-      console.log("all the landmarks", result);
+  try {
+    $.ajax({
+      url: `${urlPath}/php/infoMarkers.php`,
+      method: "GET",
+      dataType: "json",
+      data: {
+        country: currentCountryIso,
+      },
+      beforeSend: function () {
+        $("#spinner").show();
+      },
+      success: function (result) {
+        console.log("all the landmarks", result);
 
-      const filteredCities = result.data.cities.geonames.filter(
-        (city) => city.population > 150000
-      );
-      console.log("These are the filtered cities", filteredCities);
+        const filteredCities = result.data.cities.geonames.filter(
+          (city) => city.population > 150000
+        );
+        //console.log("These are the filtered cities", filteredCities);
 
-      filteredCities.forEach((entry) => {
-        let cityIcon = L.ExtraMarkers.icon({
-          prefix: "fa",
-          icon: "fa-city",
-          iconColor: "blue",
-          markerColor: "white",
-          shape: "square",
+        filteredCities.forEach((entry) => {
+          let cityIcon = L.ExtraMarkers.icon({
+            prefix: "fa",
+            icon: "fa-city",
+            iconColor: "blue",
+            markerColor: "white",
+            shape: "square",
+          });
+
+          let marker = L.marker([entry.lat, entry.lng], {
+            icon: cityIcon,
+          }).bindTooltip(
+            "<div class='col text-center'><strong>" +
+              entry.name +
+              "</strong><br><i>(" +
+              numeral(entry.population).format("0,0") +
+              ")</i></div>",
+            { direction: "top", sticky: true }
+          );
+          markers.addLayer(marker);
         });
 
-        let marker = L.marker([entry.lat, entry.lng], {
-          icon: cityIcon,
-        }).bindTooltip(
-          "<div class='col text-center'><strong>" +
-            entry.name +
-            "</strong><br><i>(" +
-            numeral(entry.population).format("0,0") +
-            ")</i></div>",
-          { direction: "top", sticky: true }
-        );
-        markers.addLayer(marker);
-      });
+        result.data.airports.geonames.forEach((entry) => {
+          let airportIcon = L.ExtraMarkers.icon({
+            prefix: "fa",
+            icon: "fa-plane",
+            iconColor: "white",
+            markerColor: "green",
+          });
 
-      result.data.airports.geonames.forEach((entry) => {
-        let airportIcon = L.ExtraMarkers.icon({
-          prefix: "fa",
-          icon: "fa-plane",
-          iconColor: "white",
-          markerColor: "green",
+          let marker = L.marker([entry.lat, entry.lng], {
+            icon: airportIcon,
+          }).bindTooltip(
+            "<div class='coll text-center'><strong>" +
+              entry.name +
+              "</stong></div>",
+            { direction: "top", sticky: true }
+          );
+
+          // Add the marker to the markers layer
+          markers.addLayer(marker);
         });
 
-        let marker = L.marker([entry.lat, entry.lng], {
-          icon: airportIcon,
-        }).bindTooltip(
-          "<div class='coll text-center'><strong>" +
-            entry.name +
-            "</stong></div>",
-          { direction: "top", sticky: true }
+        // Add the marker cluster group to the map
+        map.addLayer(markers);
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't retrieve wiki Markers: ",
+          jqXHR,
+          textStatus,
+          errorThrown
         );
-
-        // Add the marker to the markers layer
-        markers.addLayer(marker);
-      });
-
-      // Add the marker cluster group to the map
-      map.addLayer(markers);
-    },
-    error: function (jqXHR, textStatus, errorThrown) {
-      console.log(
-        "Couldn't retrieve wiki Markers:",
-        jqXHR,
-        textStatus,
-        errorThrown
-      );
-    },
-  });
+      },
+      complete: function () {
+        $("#spinner").hide();
+      },
+    });
+  } catch {
+    alert("An Error has occured when trying to fetch Map Marker information!");
+    $("#spinner").hide();
+  }
 }
+
+const timeElement = document.getElementById("currentTime");
+
+function updateTime() {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Format the string with leading zeroes
+  const clockStr = `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
+
+  timeElement.innerText = clockStr;
+}
+
+updateTime();
+setInterval(updateTime, 1000);

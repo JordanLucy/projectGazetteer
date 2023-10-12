@@ -3,8 +3,9 @@
 $executionStartTime = microtime(true);
 $latitude = $_REQUEST['lat'];
 $longitude = $_REQUEST['lon'];
+$key = "8adf76c6cca645df8dd120855231210";
 
-$url = "https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&exclude=minutely,alerts&units=metric&appid=78c766e3970675bb23047dc7723a57da";
+$url = "https://api.weatherapi.com/v1/forecast.json?q=$latitude,$longitude&days=3&key=$key";
 
 $ch = curl_init($url);
 
@@ -14,15 +15,26 @@ curl_setopt($ch, CURLOPT_URL, $url);
 
 $result = curl_exec($ch);
 
+if ($result === false) {
+    $error = curl_error($ch);
+    $output['status']['code'] = "500";
+    $output['status']['name'] = "error";
+    $output['status']['description'] = "cURL Error: " . $error;
+} elseif (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
+    $weather = json_decode($result, true);
+    $output['status']['code'] = "200";
+    $output['status']['name'] = "ok";
+    $output['status']['description'] = "success";
+    $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
+    $output['data'] = $weather;
+} else {
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $output['status']['code'] = $httpCode;
+    $output['status']['name'] = "error";
+    $output['status']['description'] = "API Error: HTTP Status $httpCode";
+}
+
 curl_close($ch);
-
-$weather = json_decode($result, true);
-
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data']['weather'] = $weather;
 
 header('Content-Type: application/json; charset=UTF-8');
 header("Access-Control-Allow-Origin: *");
