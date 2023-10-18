@@ -15,6 +15,9 @@ let currencyExchangeRate;
 let exchangeRatesList;
 let latitude = 51.5074;
 let longitude = -0.1278;
+let selectedCityLat;
+let selectedCityLng;
+let currencyList = [];
 
 let popup = L.popup();
 
@@ -83,9 +86,139 @@ let baseMaps = {
   "Nat Geo Map": Esri_NatGeoWorldMap,
 };
 
-let layerControl = L.control.layers(baseMaps).addTo(map);
+//Marker Layer Controller
 
-var markers = new L.MarkerClusterGroup();
+let airports = L.markerClusterGroup({
+  polygonOptions: {
+    fillColor: "blue",
+    color: "#000",
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.5,
+  },
+}).addTo(map);
+
+let cities = L.markerClusterGroup({
+  polygonOptions: {
+    fillColor: "blue",
+    color: "#000",
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.5,
+  },
+}).addTo(map);
+
+let markerOverlay = {
+  Airports: airports,
+  Cities: cities,
+};
+
+let layerControl = L.control.layers(baseMaps, markerOverlay).addTo(map);
+
+let markers = new L.MarkerClusterGroup();
+
+/* Create Map markers based on location*/
+function fetchAndUpdateMarkers() {
+  try {
+    $.ajax({
+      url: `${urlPath}/php/infoMarkers.php`,
+      method: "GET",
+      dataType: "json",
+      data: {
+        country: currentCountryIso,
+      },
+      beforeSend: function () {
+        $("#spinner").show();
+      },
+      success: function (result) {
+        // console.log("all the landmarks", result);
+        cities.clearLayers();
+        airports.clearLayers();
+
+        const filteredCities = result.data.cities.geonames.filter(
+          (city) => city.population > 150000
+        );
+        filteredCities.sort((a, b) => a.name.localeCompare(b.name));
+
+        // console.log("These are the filtered cities", filteredCities);
+        const citySelect = document.getElementById("citySelect");
+        citySelect.innerHTML = "";
+
+        filteredCities.forEach((entry) => {
+          const option = document.createElement("option");
+          option.value = `${entry.lat},${entry.lng}`;
+          option.textContent = entry.name;
+          citySelect.appendChild(option);
+        });
+
+        $("#citySelect option")
+          .filter(function () {
+            return $(this).text() == currentCapital;
+          })
+          .prop("selected", true);
+
+        filteredCities.forEach((entry) => {
+          let cityIcon = L.ExtraMarkers.icon({
+            prefix: "fa",
+            icon: "fa-city",
+            iconColor: "blue",
+            markerColor: "white",
+            shape: "square",
+          });
+
+          L.marker([entry.lat, entry.lng], {
+            icon: cityIcon,
+            lat: entry.lat,
+            lng: entry.lng,
+          })
+            .bindTooltip(
+              "<div class='col text-center' style='margin: 1px;'><strong>" +
+                entry.name +
+                "</strong><br><i>(" +
+                numeral(entry.population).format("0,0") +
+                ")</i></div>",
+              { direction: "top", sticky: true }
+            )
+            .addTo(cities);
+        });
+
+        result.data.airports.geonames.forEach((entry) => {
+          let airportIcon = L.ExtraMarkers.icon({
+            prefix: "fa",
+            icon: "fa-plane",
+            iconColor: "white",
+            markerColor: "green",
+          });
+
+          L.marker([entry.lat, entry.lng], {
+            icon: airportIcon,
+          })
+            .bindTooltip(
+              "<div class='col text-center' style='margin: 1px;'><strong>" +
+                entry.name +
+                "</stong></div>",
+              { direction: "top", sticky: true }
+            )
+            .addTo(airports);
+        });
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't retrieve wiki Markers: ",
+          jqXHR,
+          textStatus,
+          errorThrown
+        );
+      },
+      complete: function () {
+        $("#spinner").hide();
+      },
+    });
+  } catch {
+    alert("An Error has occured when trying to fetch Map Marker information!");
+    $("#spinner").hide();
+  }
+}
 
 //Document Ready Call -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 $(document).ready(() => {
@@ -99,6 +232,10 @@ $(document).ready(() => {
     });
     $("#countryList").on("change", () => {
       fetchAndSetBorderData();
+    });
+    $("#citySelect").on("change", () => {
+      const [lat, lng] = $("#citySelect").val().split(",");
+      fetchWeather(lat, lng);
     });
   } catch {
     alert("The document information hasn't loaded.");
@@ -117,7 +254,7 @@ const fetchCountryList = () => {
 const fetchAndPopulateCountryList = () => {
   fetchCountryList()
     .then((data) => {
-      console.log("Fetch Country List Result: ", data);
+      // console.log("Fetch Country List Result: ", data);
       if (data.status.code === "200" && data.data) {
         populateCountryList(data.data); // Loop data into select via ID target
       } else {
@@ -148,17 +285,16 @@ function fetchAndSetBorderData() {
   const selectedIso = $("#countryList").val();
   if (selectedIso) {
     currentCountryIso = selectedIso;
-    clearMarkers();
 
     $.ajax({
       url: `${urlPath}/php/countryBorder.php?iso=${selectedIso}`,
       method: "GET",
       dataType: "json",
       success: function (feature) {
-        console.log("Fetch Country Border Result: ", feature);
+        // console.log("Fetch Country Border Result: ", feature);
         if (feature) {
           currentCountryIso3 = feature.properties.iso_a3;
-          console.log("current iso a3: ", currentCountryIso3);
+          // console.log("current iso a3: ", currentCountryIso3);
 
           // Clear previous country border if exists
           clearSelectedCountryBorder();
@@ -180,6 +316,7 @@ function fetchAndSetBorderData() {
       },
     });
     getCapitalFromIsoCode(currentCountryIso);
+    getNewsArticlesFromIsoCode(currentCountryIso);
   } else {
     clearSelectedCountryBorder();
   }
@@ -194,7 +331,7 @@ function forwardGeoEncodePlaceName(place) {
     success: function (result) {
       currentCapitalLatitude = result.data.results[0].geometry.lat;
       currentCapitalLongitude = result.data.results[0].geometry.lng;
-      console.log("Open Cage api result: ", result);
+      // console.log("Open Cage api result: ", result);
       fetchAndUpdateMarkers();
     },
   });
@@ -214,8 +351,74 @@ function clearSelectedCountryBorder() {
   }
 }
 
-function clearMarkers() {
-  markers.clearLayers();
+function getNewsArticlesFromIsoCode(isoCode) {
+  try {
+    $.ajax({
+      url: `${urlPath}/php/countryNews.php`,
+      method: "GET",
+      dataType: "json",
+      data: {
+        country: isoCode,
+      },
+      beforeSend: function () {
+        $("#spinner").show();
+        // console.log(currentCountryIso);
+      },
+      success: function (result) {
+        // console.log("This is the new article result: ", result);
+
+        if (!result?.data?.articles?.length > 0 ?? false) {
+          console.log("No articles found");
+          alert("there is no articles found for this country");
+          return;
+        }
+        $("#news-tbody").html("");
+
+        function limitWords(text, maxWords) {
+          return (
+            text.split(/\s+/).slice(0, maxWords).join(" ") +
+            (text.split(/\s+/).length > maxWords ? "..." : "")
+          );
+        }
+
+        for (let i = 0; i < result.data.articles.length; i++) {
+          let title = result.data.articles[i].title;
+          let maxWords = 10; // Set the maximum number of words
+
+          let truncatedTitle = limitWords(title, maxWords);
+
+          $("#news-tbody").append(
+            `<tr>
+            <td><img style="height:100px;object-fit:cover;width:150px;" src="${result.data.articles[i].image}"></td>
+            <td id="newsTitle"><a target="_blank" href="${result.data.articles[i].url}">${truncatedTitle}</a>
+            <br>
+            <br><em>
+            ${result.data.articles[i].source.name}</em>
+            </td> 
+        </tr>`
+          );
+          const img = new Image();
+          img.src = result.data.articles[i].image;
+          // console.log("Image preloaded:", img.src);
+        }
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log(
+          "Couldn't find any news information: ",
+          jqXHR,
+          textStatus,
+          errorThrown
+        );
+      },
+      complete: function () {
+        $("#spinner").hide();
+      },
+    });
+  } catch (error) {
+    console.log("News Error: ", error);
+    alert("An Error has occured when trying to fetch the news!");
+    $("#spinner").hide();
+  }
 }
 
 let currentCurrencyDetails;
@@ -229,16 +432,25 @@ function getCapitalFromIsoCode(isoCode) {
       if (result.data) {
         result.data.forEach((country) => {
           const capitalCode = country.cca2;
+          if (country.currencies) {
+            currencyList.push.apply(
+              currencyList,
+              Object.entries(country.currencies)
+            );
+          }
           if (isoCode === capitalCode) {
             currentCurrencyDetails = Object.entries(country.currencies)[0];
-            console.log(
-              "The current Currency Details: ",
-              currentCurrencyDetails
-            );
+            // console.log(
+            //   "The current Currency Details: ",
+            //   currentCurrencyDetails
+            // );
             currentCapital = country.capital[0];
+
             forwardGeoEncodePlaceName(country.capital);
+            // console.log("Im setting the capital to", country.capital[0]);
           }
         });
+        // console.log("currencyList", currencyList);
       } else {
         console.log("Couldn't find the country code from rest API");
       }
@@ -268,7 +480,7 @@ function successFunction(position) {
   latitude = position?.coords?.latitude ?? latitude;
   longitude = position?.coords?.longitude ?? longitude;
 
-  console.log("users latlng", latitude, longitude);
+  // console.log("users latlng", latitude, longitude);
 
   try {
     $.ajax({
@@ -277,15 +489,15 @@ function successFunction(position) {
       dataType: "json",
       data: { placeName: encodeURIComponent(`${latitude},${longitude}`) },
       success: function (result) {
-        console.log("User Location Data: ", result);
+        // console.log("User Location Data: ", result);
 
         let countryIso =
           result.data.results[0].components["ISO_3166-1_alpha-2"];
-        console.log("This is the countryISO", countryIso);
+        // console.log("This is the countryISO", countryIso);
 
         // Update currentCountryIso
         currentCountryIso = countryIso;
-        console.log("This is the current Country ISO: ", currentCountryIso);
+        // console.log("This is the current Country ISO: ", currentCountryIso);
 
         //Change the Select2 container to update on the users country.
         $("#countryList").val(currentCountryIso).trigger("change.select2");
@@ -341,7 +553,7 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log(result);
+          // console.log("General Country Info : ", result);
 
           // Check if the 'geonames' array exists and is not empty
           if (
@@ -361,15 +573,11 @@ L.easyButton(
             $("#countryPostCode").html(countryInfo.postalCodeFormat);
             $("#countryLanguages").html(countryInfo.languages);
 
-            if (countryInfo.population >= 1000000) {
-              let populationMillions =
-                (countryInfo.population / 1000000).toFixed(2) + "M";
-              $("#countryPopulation").html(populationMillions);
-            } else {
-              $("#countryPopulation").html(countryInfo.population);
-            }
+            $("#countryPopulation").html(
+              numeral(countryInfo.population).format("0.0a")
+            );
             let area = Math.floor(countryInfo.areaInSqKm);
-            $("#countryArea").html(addCommas(area) + `SqKm`);
+            $("#countryArea").html(numeral(area).format("0,0") + `SqKm`);
 
             // Show the modal
             $("#countryModal").modal("show");
@@ -402,75 +610,7 @@ L.easyButton(
 L.easyButton(
   '<i class="fa-solid fa-newspaper fa-lg" style="color: #000"></i>',
   () => {
-    try {
-      $.ajax({
-        url: `${urlPath}/php/countryNews.php`,
-        method: "GET",
-        dataType: "json",
-        data: {
-          country: currentCountryIso,
-        },
-        beforeSend: function () {
-          $("#spinner").show();
-          console.log(currentCountryIso);
-        },
-        success: function (result) {
-          console.log("This is the new article result: ", result);
-
-          if (!result?.data?.articles?.length > 0 ?? false) {
-            console.log("No articles found");
-            alert("there is no articles found for this country");
-            return;
-          }
-          $("#news-tbody").html("");
-
-          function limitWords(text, maxWords) {
-            return (
-              text.split(/\s+/).slice(0, maxWords).join(" ") +
-              (text.split(/\s+/).length > maxWords ? "..." : "")
-            );
-          }
-
-          for (let i = 0; i < result.data.articles.length; i++) {
-            let title = result.data.articles[i].title;
-            let maxWords = 10; // Set the maximum number of words
-
-            let truncatedTitle = limitWords(title, maxWords);
-
-            $("#news-tbody").append(
-              `<tr>
-                <td><img style="height:100px;object-fit:cover;width:150px;" src="${result.data.articles[i].image}"></td>
-                <td id="newsTitle"><a target="_blank" href="${result.data.articles[i].url}">${truncatedTitle}</a>
-                <br>
-                <br><em>
-                ${result.data.articles[i].source.name}</em>
-                </td> 
-            </tr>`
-            );
-            const img = new Image();
-            img.src = result.data.articles[i].image;
-            console.log("Image preloaded:", img.src);
-          }
-
-          $("#newsModal").modal("show");
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-          console.log(
-            "Couldn't find any news information: ",
-            jqXHR,
-            textStatus,
-            errorThrown
-          );
-        },
-        complete: function () {
-          $("#spinner").hide();
-        },
-      });
-    } catch (error) {
-      console.log("News Error: ", error);
-      alert("An Error has occured when trying to fetch the news!");
-      $("#spinner").hide();
-    }
+    $("#newsModal").modal("show");
   }
 ).addTo(map);
 
@@ -483,77 +623,7 @@ L.easyButton(
       return;
     }
     try {
-      $.ajax({
-        url: `${urlPath}/php/weatherAPI.php`,
-        method: "GET",
-        dataType: "json",
-        data: {
-          lat: currentCapitalLatitude,
-          lon: currentCapitalLongitude,
-        },
-        beforeSend: function () {
-          $("#spinner").show();
-        },
-        success: function (result) {
-          console.log("Weather API Call Result: ", result);
-
-          const weatherData = result.data.forecast.forecastday;
-
-          // const sunriseTime = new Date(
-          //   result.data.weather.sys.sunrise * 1000
-          // ).toLocaleTimeString();
-          // const sunsetTime = new Date(
-          //   result.data.weather.sys.sunset * 1000
-          // ).toLocaleTimeString();
-          $("#currentWeatherConditions").html(
-            result.data.current.condition.text
-          );
-          $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
-          $("#todayMaxtemp").html(
-            Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
-          );
-          $("#todayMinTemp").html(
-            Math.round(weatherData[0].day.mintemp_c) + "&deg;"
-          );
-          // Forecastday1
-          $("#day1Date").html(
-            Date.parse(weatherData[1].date).toString("ddd dS")
-          );
-          // $("#day1WeatherConditions").html(weatherData[1].day.condition.text);
-          $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
-          $("#day1Maxtemp").html(
-            Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
-          );
-          $("#day1Mintemp").html(
-            Math.round(weatherData[1].day.mintemp_c) + "&deg;"
-          );
-          // Forecastday2
-          $("#day2Date").html(
-            Date.parse(weatherData[2].date).toString("ddd dS")
-          );
-          // $("#day2WeatherConditions").html(weatherData[2].day.condition.text);
-          $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
-          $("#day2Maxtemp").html(
-            Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
-          );
-          $("#day2Mintemp").html(
-            Math.round(weatherData[2].day.mintemp_c) + "&deg;"
-          );
-
-          $("#weatherModal").modal("show");
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-          console.log(
-            "Couldn't fetch weather information: ",
-            jqXHR,
-            textStatus,
-            errorThrown
-          );
-        },
-        complete: function () {
-          $("#spinner").hide();
-        },
-      });
+      fetchWeather(currentCapitalLatitude, currentCapitalLongitude);
     } catch {
       alert(
         "An Error has occured when trying to fetch the weather information!"
@@ -562,6 +632,66 @@ L.easyButton(
     }
   }
 ).addTo(map);
+
+function fetchWeather(lat, lng) {
+  $.ajax({
+    url: `${urlPath}/php/weatherAPI.php`,
+    method: "GET",
+    dataType: "json",
+    data: {
+      lat: lat,
+      lon: lng,
+    },
+    beforeSend: function () {
+      $("#spinner").show();
+    },
+    success: function (result) {
+      // console.log("Weather API Call Result: ", result);
+
+      const weatherData = result.data.forecast.forecastday;
+
+      $("#currentWeatherConditions").html(result.data.current.condition.text);
+      $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
+      $("#todayMaxtemp").html(
+        Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
+      );
+      $("#todayMinTemp").html(
+        Math.round(weatherData[0].day.mintemp_c) + "&deg;"
+      );
+      // Forecastday1
+      $("#day1Date").html(Date.parse(weatherData[1].date).toString("ddd dS"));
+      $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
+      $("#day1Maxtemp").html(
+        Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
+      );
+      $("#day1Mintemp").html(
+        Math.round(weatherData[1].day.mintemp_c) + "&deg;"
+      );
+      // Forecastday2
+      $("#day2Date").html(Date.parse(weatherData[2].date).toString("ddd dS"));
+      $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
+      $("#day2Maxtemp").html(
+        Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
+      );
+      $("#day2Mintemp").html(
+        Math.round(weatherData[2].day.mintemp_c) + "&deg;"
+      );
+
+      $("#weatherModal").modal("show");
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.log(
+        "Couldn't fetch weather information: ",
+        jqXHR,
+        textStatus,
+        errorThrown
+      );
+    },
+    complete: function () {
+      $("#spinner").hide();
+    },
+  });
+}
 
 // Currency API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
@@ -579,15 +709,35 @@ L.easyButton(
           if (result.status.code === "200" && result.data) {
             exchangeRatesList = result.data.exchangeRates;
 
-            console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
-
+            // console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
+            // console.log(
+            //   "This is the exchangeRatesList result: ",
+            //   exchangeRatesList
+            // );
             currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
 
             $("#currencyName").html(currentCurrencyDetails[1].name);
-            $("#currencySymbol").html(currentCurrencyDetails[1].symbol);
-            $("#exchangeRate").html(
-              `$1 USD  = ${currentCurrencyDetails[1].symbol}${currencyExchangeRate}`
-            );
+            // $("#currencySymbol").html(currentCurrencyDetails[1].symbol);
+
+            let selectElement = $("#exchangeRate");
+            selectElement.empty();
+            for (let currencyCode in exchangeRatesList) {
+              if (exchangeRatesList.hasOwnProperty(currencyCode)) {
+                let exchangeRate = exchangeRatesList[currencyCode];
+                let currentCurrencyWithName = currencyList.find(
+                  (o) => o[0] == currencyCode
+                );
+
+                if (!currentCurrencyWithName) continue;
+
+                let currencyName = `${currencyCode} - ${currentCurrencyWithName[1].name}`;
+
+                let option = $("<option></option>")
+                  .attr("value", exchangeRate)
+                  .text(currencyName);
+                selectElement.append(option);
+              }
+            }
           } else {
             console.error("Failed to fetch currency information");
           }
@@ -615,6 +765,27 @@ L.easyButton(
   }
 ).addTo(map);
 
+function calcResult() {
+  $("#toAmount").val(
+    numeral($("#fromAmount").val() * $("#exchangeRate").val()).format("0,0.00")
+  );
+}
+$("#fromAmount").on("keyup", function () {
+  calcResult();
+});
+
+$("#fromAmount").on("change", function () {
+  calcResult();
+});
+
+$("#exchangeRate").on("change", function () {
+  calcResult();
+});
+
+$("#currencyModal").on("show.bs.modal", function () {
+  calcResult();
+});
+
 // Wikipedia API call ----------------------------------------------------------------------------------------------------------------------------------------------
 L.easyButton(
   '<i class="fa-brands fa-wikipedia-w fa-lg" style="color: #000;"></i>',
@@ -623,8 +794,8 @@ L.easyButton(
       alert("No country ISO or capital has been set.");
     }
     try {
-      console.log("currentCountryIso", currentCountryIso);
-      console.log("currentCapital", currentCapital);
+      // console.log("currentCountryIso", currentCountryIso);
+      // console.log("currentCapital", currentCapital);
       $.ajax({
         url: `${urlPath}/php/countryWiki.php`,
         method: "GET",
@@ -637,7 +808,7 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log("Wiki api call result: ", result);
+          // console.log("Wiki api call result: ", result);
 
           let countryWikiResults = result.data.geonames[0];
 
@@ -679,6 +850,7 @@ L.easyButton(
   }
 ).addTo(map);
 
+//Bank Holidays EasyButton Modal
 L.easyButton(
   '<i class="fa-solid fa-calendar fa-lg" style="color: #000" ></i>',
   () => {
@@ -694,7 +866,7 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log("Bank Holiday Modal Information", result);
+          // console.log("Bank Holiday Modal Information", result);
 
           const bankHolidayData = result.data;
           $("#holidays-tbody").html("");
@@ -702,11 +874,11 @@ L.easyButton(
           for (let i = 0; i < bankHolidayData.length; i++) {
             const holiday = bankHolidayData[i];
             const formattedDate = new Date(holiday.date).toString(
-              "ddd MMM dd yyyy"
+              "ddd dS MMM yyyy"
             );
 
             $("#holidays-tbody").append(
-              `<tr>
+              `<tr class="text-left mb-2">
               <td>${formattedDate}</td>
               <td>${holiday.name}</td>
               </tr>`
@@ -736,91 +908,6 @@ L.easyButton(
     }
   }
 ).addTo(map);
-
-/* Create Map markers based on location*/
-function fetchAndUpdateMarkers() {
-  try {
-    $.ajax({
-      url: `${urlPath}/php/infoMarkers.php`,
-      method: "GET",
-      dataType: "json",
-      data: {
-        country: currentCountryIso,
-      },
-      beforeSend: function () {
-        $("#spinner").show();
-      },
-      success: function (result) {
-        console.log("all the landmarks", result);
-
-        const filteredCities = result.data.cities.geonames.filter(
-          (city) => city.population > 150000
-        );
-        //console.log("These are the filtered cities", filteredCities);
-
-        filteredCities.forEach((entry) => {
-          let cityIcon = L.ExtraMarkers.icon({
-            prefix: "fa",
-            icon: "fa-city",
-            iconColor: "blue",
-            markerColor: "white",
-            shape: "square",
-          });
-
-          let marker = L.marker([entry.lat, entry.lng], {
-            icon: cityIcon,
-          }).bindTooltip(
-            "<div class='col text-center'><strong>" +
-              entry.name +
-              "</strong><br><i>(" +
-              numeral(entry.population).format("0,0") +
-              ")</i></div>",
-            { direction: "top", sticky: true }
-          );
-          markers.addLayer(marker);
-        });
-
-        result.data.airports.geonames.forEach((entry) => {
-          let airportIcon = L.ExtraMarkers.icon({
-            prefix: "fa",
-            icon: "fa-plane",
-            iconColor: "white",
-            markerColor: "green",
-          });
-
-          let marker = L.marker([entry.lat, entry.lng], {
-            icon: airportIcon,
-          }).bindTooltip(
-            "<div class='coll text-center'><strong>" +
-              entry.name +
-              "</stong></div>",
-            { direction: "top", sticky: true }
-          );
-
-          // Add the marker to the markers layer
-          markers.addLayer(marker);
-        });
-
-        // Add the marker cluster group to the map
-        map.addLayer(markers);
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-        console.log(
-          "Couldn't retrieve wiki Markers: ",
-          jqXHR,
-          textStatus,
-          errorThrown
-        );
-      },
-      complete: function () {
-        $("#spinner").hide();
-      },
-    });
-  } catch {
-    alert("An Error has occured when trying to fetch Map Marker information!");
-    $("#spinner").hide();
-  }
-}
 
 const timeElement = document.getElementById("currentTime");
 

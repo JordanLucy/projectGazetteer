@@ -85,3 +85,9 @@ body {
     background-image: url(images\modal-images\background-weather.gif);
     background-size: cover;
 }
+
+.language-list {
+    display: block;
+    max-width: 100%;
+    word-break: break-word;
+  }
