@@ -370,7 +370,7 @@ function getNewsArticlesFromIsoCode(isoCode) {
 
         if (!result?.data?.articles?.length > 0 ?? false) {
           console.log("No articles found");
-          alert("there is no articles found for this country");
+          alert("there was no news articles found for this country");
           return;
         }
         $("#news-tbody").html("");
@@ -718,11 +718,11 @@ L.easyButton(
         },
         success: function (result) {
           exchangeRatesList = result.data.exchangeRates;
-          console.log("This is the currency api result: ", result);
-          console.log(
-            "This is the exchangeRatesList result: ",
-            exchangeRatesList
-          );
+          // console.log("This is the currency api result: ", result);
+          // console.log(
+          //   "This is the exchangeRatesList result: ",
+          //   exchangeRatesList
+          // );
           currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
 
           $("#currencyName").html(currentCurrencyDetails[1].name);
@@ -886,34 +886,26 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          // console.log("Bank Holiday Modal Information", result);
-          if (result.status.code === "200" && result.data) {
-            const bankHolidayData = result.data;
-            $("#holidays-tbody").html("");
+          console.log("Bank Holiday Modal Information", result);
+          const bankHolidayData = result.data;
+          $("#holidays-tbody").html("");
 
-            for (let i = 0; i < bankHolidayData.length; i++) {
-              const holiday = bankHolidayData[i];
-              const formattedDate = new Date(holiday.date).toString(
-                "ddd dS MMM yyyy"
-              );
+          for (let i = 0; i < bankHolidayData.length; i++) {
+            const holiday = bankHolidayData[i];
+            const formattedDate = new Date(holiday.date).toString(
+              "ddd dS MMM yyyy"
+            );
 
-              $("#holidays-tbody").append(
-                `<tr class="text-left mb-2">
+            $("#holidays-tbody").append(
+              `<tr class="text-left mb-2">
               <td>${formattedDate}</td>
               <td>${holiday.name}</td>
               </tr>`
-              );
-            }
-
-            // Set the modal content after the loop has finished
-            $("#bankHolidayModal").modal("show");
-          } else {
-            console.log(result.status.code);
-            alert(
-              "Couldn't get Bank Holiday information from the API, Error Code: " +
-                result.status.code
             );
           }
+
+          // Set the modal content after the loop has finished
+          $("#bankHolidayModal").modal("show");
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
@@ -921,6 +913,12 @@ L.easyButton(
             jqXHR,
             textStatus,
             errorThrown
+          );
+          console.log(result);
+          console.log(result.status.code);
+          alert(
+            "Couldn't get Bank Holiday information from the API, Error Code: " +
+              result.status.code
           );
         },
         complete: function () {
