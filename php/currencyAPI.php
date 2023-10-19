@@ -1,34 +1,47 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-// $countryCurrency = $_REQUEST['country'];
+class CurrencyAPI extends httpHelper
+{
 
-$apiKey = "2fe339a2d149470785e7b13471dd50d3";
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$url = "https://openexchangerates.org/api/latest.json?&app_id=$apiKey";
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-$curl = curl_init($url);
+            $apiKey = "2fe339a2d149470785e7b13471dd50d3";
 
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curl, CURLOPT_URL, $url);
+            $url = "https://openexchangerates.org/api/latest.json?&app_id=$apiKey";
 
-$result = curl_exec($curl);
+            $result = $this->curlRequest($url);
 
-curl_close($curl);
+            $data = json_decode($result['response'], true);
 
-$exchangeRates = json_decode($result, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
 
-$currentCurrency = isset($_GET['currentCurrency']) ?? 'USD'; // Default to USD if currentCurrency is not provided
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => ['exchangeRates' => $data['rates']],
+                'message'      => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data']['exchangeRates'] = $exchangeRates['rates'];
-
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
-
-echo json_encode($output);
+new CurrencyAPI();
