@@ -1,30 +1,48 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-$countryInfo = $_REQUEST['country'];
-$username = "flightltd&style=full";
+class CountryInfoAPI extends httpHelper
+{
 
-$url = "http://api.geonames.org/countryInfoJSON?country=$countryInfo&username=$username";
-$curl = curl_init($url);
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curl, CURLOPT_URL, $url);
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-$result = curl_exec($curl);
+            $countryInfo = $_REQUEST['country'];
+            $username = "flightltd&style=full";
 
-curl_close($curl);
+            $url = "http://api.geonames.org/countryInfoJSON?country=$countryInfo&username=$username";
 
-$generalCountryInfo = json_decode($result, true);
+            $result = $this->curlRequest($url);
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data'] = $generalCountryInfo;
+            $data = json_decode($result['response'], true);
 
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
 
-echo json_encode($output);
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => $data,
+                'message'      => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
+
+new CountryInfoAPI();
