@@ -132,6 +132,7 @@ function fetchAndUpdateMarkers() {
       },
       success: function (result) {
         // console.log("all the landmarks", result);
+
         cities.clearLayers();
         airports.clearLayers();
 
@@ -583,6 +584,10 @@ L.easyButton(
             $("#countryModal").modal("show");
           } else {
             console.log("No country info found in the response.");
+            alert(
+              "Failed to retrieve data from the API, Error Code: " +
+                results.status.code
+            );
           }
         },
         error: function (jqXHR, textStatus, errorThrown) {
@@ -648,36 +653,44 @@ function fetchWeather(lat, lng) {
     success: function (result) {
       // console.log("Weather API Call Result: ", result);
 
-      const weatherData = result.data.forecast.forecastday;
+      if (result.status.code === "200" && result.data) {
+        const weatherData = result.data.forecast.forecastday;
 
-      $("#currentWeatherConditions").html(result.data.current.condition.text);
-      $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
-      $("#todayMaxtemp").html(
-        Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
-      );
-      $("#todayMinTemp").html(
-        Math.round(weatherData[0].day.mintemp_c) + "&deg;"
-      );
-      // Forecastday1
-      $("#day1Date").html(Date.parse(weatherData[1].date).toString("ddd dS"));
-      $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
-      $("#day1Maxtemp").html(
-        Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
-      );
-      $("#day1Mintemp").html(
-        Math.round(weatherData[1].day.mintemp_c) + "&deg;"
-      );
-      // Forecastday2
-      $("#day2Date").html(Date.parse(weatherData[2].date).toString("ddd dS"));
-      $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
-      $("#day2Maxtemp").html(
-        Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
-      );
-      $("#day2Mintemp").html(
-        Math.round(weatherData[2].day.mintemp_c) + "&deg;"
-      );
-
-      $("#weatherModal").modal("show");
+        $("#currentWeatherConditions").html(result.data.current.condition.text);
+        $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
+        $("#todayMaxtemp").html(
+          Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
+        );
+        $("#todayMinTemp").html(
+          Math.round(weatherData[0].day.mintemp_c) + "&deg;"
+        );
+        // Forecastday1
+        $("#day1Date").html(Date.parse(weatherData[1].date).toString("ddd dS"));
+        $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
+        $("#day1Maxtemp").html(
+          Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
+        );
+        $("#day1Mintemp").html(
+          Math.round(weatherData[1].day.mintemp_c) + "&deg;"
+        );
+        // Forecastday2
+        $("#day2Date").html(Date.parse(weatherData[2].date).toString("ddd dS"));
+        $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
+        $("#day2Maxtemp").html(
+          Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
+        );
+        $("#day2Mintemp").html(
+          Math.round(weatherData[2].day.mintemp_c) + "&deg;"
+        );
+        $("#weatherModal").modal("show");
+      } else {
+        console.log(result.status.code);
+        console.log(result);
+        alert(
+          "Couldn't get weather information from the API, Error code: " +
+            result.status.code
+        );
+      }
     },
     error: function (jqXHR, textStatus, errorThrown) {
       console.log(
@@ -706,42 +719,37 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          if (result.status.code === "200" && result.data) {
-            exchangeRatesList = result.data.exchangeRates;
+          console.log("result", result);
+          exchangeRatesList = result.data.exchangeRates;
+          console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
+          console.log(
+            "This is the exchangeRatesList result: ",
+            exchangeRatesList
+          );
+          currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
 
-            // console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
-            // console.log(
-            //   "This is the exchangeRatesList result: ",
-            //   exchangeRatesList
-            // );
-            currencyExchangeRate = exchangeRatesList[currentCurrencyDetails[0]];
+          $("#currencyName").html(currentCurrencyDetails[1].name);
+          // $("#currencySymbol").html(currentCurrencyDetails[1].symbol);
 
-            $("#currencyName").html(currentCurrencyDetails[1].name);
-            // $("#currencySymbol").html(currentCurrencyDetails[1].symbol);
+          let selectElement = $("#exchangeRate");
+          selectElement.empty();
+          for (let currencyCode in exchangeRatesList) {
+            if (exchangeRatesList.hasOwnProperty(currencyCode)) {
+              let exchangeRate = exchangeRatesList[currencyCode];
+              let currentCurrencyWithName = currencyList.find(
+                (o) => o[0] == currencyCode
+              );
 
-            let selectElement = $("#exchangeRate");
-            selectElement.empty();
-            for (let currencyCode in exchangeRatesList) {
-              if (exchangeRatesList.hasOwnProperty(currencyCode)) {
-                let exchangeRate = exchangeRatesList[currencyCode];
-                let currentCurrencyWithName = currencyList.find(
-                  (o) => o[0] == currencyCode
-                );
+              if (!currentCurrencyWithName) continue;
 
-                if (!currentCurrencyWithName) continue;
+              let currencyName = `${currencyCode} - ${currentCurrencyWithName[1].name}`;
 
-                let currencyName = `${currencyCode} - ${currentCurrencyWithName[1].name}`;
-
-                let option = $("<option></option>")
-                  .attr("value", exchangeRate)
-                  .text(currencyName);
-                selectElement.append(option);
-              }
+              let option = $("<option></option>")
+                .attr("value", exchangeRate)
+                .text(currencyName);
+              selectElement.append(option);
             }
-          } else {
-            console.error("Failed to fetch currency information");
           }
-
           $("#currencyModal").modal("show");
         },
         error: function (jqXHR, textStatus, errorThrown) {
@@ -751,6 +759,13 @@ L.easyButton(
             textStatus,
             errorThrown
           );
+          console.error("Failed to fetch currency information");
+          console.log(result.status.code);
+          console.log(result);
+          alert(
+            "Failed to get the currency data from the api - Error Code: " +
+              result.status.code
+          );
         },
         complete: function () {
           $("#spinner").hide();
@@ -758,7 +773,7 @@ L.easyButton(
       });
     } catch {
       alert(
-        "An Error has occured when trying to fetch the country information!"
+        "An Error has occured when trying to fetch the currency information!"
       );
       $("#spinner").hide();
     }
@@ -810,26 +825,34 @@ L.easyButton(
         success: function (result) {
           // console.log("Wiki api call result: ", result);
 
-          let countryWikiResults = result.data.geonames[0];
+          if (result.status.code === "200" && result.data) {
+            let countryWikiResults = result.data.geonames[0];
 
-          //Create img element for thumbnail
-          let thumbnailImg = document.createElement("img");
-          thumbnailImg.src = countryWikiResults.thumbnailImg;
+            //Create img element for thumbnail
+            let thumbnailImg = document.createElement("img");
+            thumbnailImg.src = countryWikiResults.thumbnailImg;
 
-          $("#wikiThumbnail").html(thumbnailImg);
-          $("#countryWiki").html(countryWikiResults.title);
-          $("#wikiSummary").html(countryWikiResults.summary);
-          $("#wikiFeature").html(countryWikiResults.feature);
+            $("#wikiThumbnail").html(thumbnailImg);
+            $("#countryWiki").html(countryWikiResults.title);
+            $("#wikiSummary").html(countryWikiResults.summary);
+            $("#wikiFeature").html(countryWikiResults.feature);
 
-          //Create element for the wiki link
-          let wikiLink = document.createElement("a");
-          wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
-          wikiLink.target = "_blank";
-          wikiLink.textContent = "Click this link to load the Wikipedia Page";
+            //Create element for the wiki link
+            let wikiLink = document.createElement("a");
+            wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
+            wikiLink.target = "_blank";
+            wikiLink.textContent = "Click this link to load the Wikipedia Page";
 
-          $("#wikiUrl").html(wikiLink);
+            $("#wikiUrl").html(wikiLink);
 
-          $("#wikiModal").modal("show");
+            $("#wikiModal").modal("show");
+          } else {
+            console.log(result.status.code);
+            alert(
+              "Couldn't get Wikipedia information from the API, Error Code: " +
+                result.status.code
+            );
+          }
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
@@ -867,26 +890,33 @@ L.easyButton(
         },
         success: function (result) {
           // console.log("Bank Holiday Modal Information", result);
+          if (result.status.code === "200" && result.data) {
+            const bankHolidayData = result.data;
+            $("#holidays-tbody").html("");
 
-          const bankHolidayData = result.data;
-          $("#holidays-tbody").html("");
+            for (let i = 0; i < bankHolidayData.length; i++) {
+              const holiday = bankHolidayData[i];
+              const formattedDate = new Date(holiday.date).toString(
+                "ddd dS MMM yyyy"
+              );
 
-          for (let i = 0; i < bankHolidayData.length; i++) {
-            const holiday = bankHolidayData[i];
-            const formattedDate = new Date(holiday.date).toString(
-              "ddd dS MMM yyyy"
-            );
-
-            $("#holidays-tbody").append(
-              `<tr class="text-left mb-2">
+              $("#holidays-tbody").append(
+                `<tr class="text-left mb-2">
               <td>${formattedDate}</td>
               <td>${holiday.name}</td>
               </tr>`
+              );
+            }
+
+            // Set the modal content after the loop has finished
+            $("#bankHolidayModal").modal("show");
+          } else {
+            console.log(result.status.code);
+            alert(
+              "Couldn't get Bank Holiday information from the API, Error Code: " +
+                result.status.code
             );
           }
-
-          // Set the modal content after the loop has finished
-          $("#bankHolidayModal").modal("show");
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
