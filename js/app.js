@@ -651,46 +651,37 @@ function fetchWeather(lat, lng) {
       $("#spinner").show();
     },
     success: function (result) {
-      // console.log("Weather API Call Result: ", result);
+      //console.log("Weather API Call Result: ", result);
 
-      if (result.status.code === "200" && result.data) {
-        const weatherData = result.data.forecast.forecastday;
+      const weatherData = result.data.forecast.forecastday;
 
-        $("#currentWeatherConditions").html(result.data.current.condition.text);
-        $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
-        $("#todayMaxtemp").html(
-          Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
-        );
-        $("#todayMinTemp").html(
-          Math.round(weatherData[0].day.mintemp_c) + "&deg;"
-        );
-        // Forecastday1
-        $("#day1Date").html(Date.parse(weatherData[1].date).toString("ddd dS"));
-        $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
-        $("#day1Maxtemp").html(
-          Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
-        );
-        $("#day1Mintemp").html(
-          Math.round(weatherData[1].day.mintemp_c) + "&deg;"
-        );
-        // Forecastday2
-        $("#day2Date").html(Date.parse(weatherData[2].date).toString("ddd dS"));
-        $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
-        $("#day2Maxtemp").html(
-          Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
-        );
-        $("#day2Mintemp").html(
-          Math.round(weatherData[2].day.mintemp_c) + "&deg;"
-        );
-        $("#weatherModal").modal("show");
-      } else {
-        console.log(result.status.code);
-        console.log(result);
-        alert(
-          "Couldn't get weather information from the API, Error code: " +
-            result.status.code
-        );
-      }
+      $("#currentWeatherConditions").html(result.data.current.condition.text);
+      $("#weatherIcon").attr("src", weatherData[0].day.condition.icon);
+      $("#todayMaxtemp").html(
+        Math.round(weatherData[0].day.maxtemp_c) + "&deg;"
+      );
+      $("#todayMinTemp").html(
+        Math.round(weatherData[0].day.mintemp_c) + "&deg;"
+      );
+      // Forecastday1
+      $("#day1Date").html(Date.parse(weatherData[1].date).toString("ddd dS"));
+      $("#day1Icon").attr("src", weatherData[1].day.condition.icon);
+      $("#day1Maxtemp").html(
+        Math.round(weatherData[1].day.maxtemp_c) + "&deg;"
+      );
+      $("#day1Mintemp").html(
+        Math.round(weatherData[1].day.mintemp_c) + "&deg;"
+      );
+      // Forecastday2
+      $("#day2Date").html(Date.parse(weatherData[2].date).toString("ddd dS"));
+      $("#day2Icon").attr("src", weatherData[2].day.condition.icon);
+      $("#day2Maxtemp").html(
+        Math.round(weatherData[2].day.maxtemp_c) + "&deg;"
+      );
+      $("#day2Mintemp").html(
+        Math.round(weatherData[2].day.mintemp_c) + "&deg;"
+      );
+      $("#weatherModal").modal("show");
     },
     error: function (jqXHR, textStatus, errorThrown) {
       console.log(
@@ -698,6 +689,13 @@ function fetchWeather(lat, lng) {
         jqXHR,
         textStatus,
         errorThrown
+      );
+      console.error("Failed to fetch currency information");
+      console.log(result.status.code);
+      console.log(result);
+      alert(
+        "Failed to get the currency data from the api - Error Code: " +
+          result.status.code
       );
     },
     complete: function () {
@@ -719,9 +717,8 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log("result", result);
           exchangeRatesList = result.data.exchangeRates;
-          console.log("This is the currency api result: ", result); // contains result.data.exchangeRates -> lookup via currency code i.e. GBP
+          console.log("This is the currency api result: ", result);
           console.log(
             "This is the exchangeRatesList result: ",
             exchangeRatesList

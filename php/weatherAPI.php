@@ -1,42 +1,50 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
-$latitude = $_REQUEST['lat'];
-$longitude = $_REQUEST['lon'];
-$key = "8adf76c6cca645df8dd120855231210";
+require 'httpHelper.php';
 
-$url = "https://api.weatherapi.com/v1/forecast.json?q=$latitude,$longitude&days=3&key=$key";
+class WeatherAPI extends httpHelper
+{
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$ch = curl_init($url);
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_URL, $url);
+            $latitude = $_REQUEST['lat'];
 
-$result = curl_exec($ch);
+            $longitude = $_REQUEST['lon'];
 
-if ($result === false) {
-    $error = curl_error($ch);
-    $output['status']['code'] = "500";
-    $output['status']['name'] = "error";
-    $output['status']['description'] = "cURL Error: " . $error;
-} elseif (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
-    $weather = json_decode($result, true);
-    $output['status']['code'] = "200";
-    $output['status']['name'] = "ok";
-    $output['status']['description'] = "success";
-    $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-    $output['data'] = $weather;
-} else {
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $output['status']['code'] = $httpCode;
-    $output['status']['name'] = "error";
-    $output['status']['description'] = "API Error: HTTP Status $httpCode";
+            $key = "8adf76c6cca645df8dd120855231210";
+
+            $url = "https://api.weatherapi.com/v1/forecast.json?q=$latitude,$longitude&days=3&key=$key";
+
+            $result = $this->curlRequest($url);
+
+            $data = json_decode($result['response'], true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
+
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => $data,
+                'message'      => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
 }
 
-curl_close($ch);
-
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
-
-echo json_encode($output);
+new WeatherAPI();
