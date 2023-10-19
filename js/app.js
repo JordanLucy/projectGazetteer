@@ -131,7 +131,7 @@ function fetchAndUpdateMarkers() {
         $("#spinner").show();
       },
       success: function (result) {
-        console.log("all the landmarks", result);
+        //console.log("all the landmarks", result);
 
         cities.clearLayers();
         airports.clearLayers();
@@ -884,7 +884,7 @@ L.easyButton(
           $("#spinner").show();
         },
         success: function (result) {
-          console.log("Bank Holiday Modal Information", result);
+          //console.log("Bank Holiday Modal Information", result);
           const bankHolidayData = result.data;
           $("#holidays-tbody").html("");
 

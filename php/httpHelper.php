@@ -29,7 +29,7 @@ class httpHelper
             case 200:
                 $output['status']['name'] = "ok";
                 $output['status']['description'] = "success";
-                $output['data'] = $curlResultData['data']; //?? 'no exchange rates found';
+                $output['data'] = $curlResultData['data'];
                 return json_encode($output);
                 break;
             case 401:
