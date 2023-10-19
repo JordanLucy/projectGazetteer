@@ -822,34 +822,26 @@ L.easyButton(
         success: function (result) {
           // console.log("Wiki api call result: ", result);
 
-          if (result.status.code === "200" && result.data) {
-            let countryWikiResults = result.data.geonames[0];
+          let countryWikiResults = result.data.geonames[0];
 
-            //Create img element for thumbnail
-            let thumbnailImg = document.createElement("img");
-            thumbnailImg.src = countryWikiResults.thumbnailImg;
+          //Create img element for thumbnail
+          let thumbnailImg = document.createElement("img");
+          thumbnailImg.src = countryWikiResults.thumbnailImg;
 
-            $("#wikiThumbnail").html(thumbnailImg);
-            $("#countryWiki").html(countryWikiResults.title);
-            $("#wikiSummary").html(countryWikiResults.summary);
-            $("#wikiFeature").html(countryWikiResults.feature);
+          $("#wikiThumbnail").html(thumbnailImg);
+          $("#countryWiki").html(countryWikiResults.title);
+          $("#wikiSummary").html(countryWikiResults.summary);
+          $("#wikiFeature").html(countryWikiResults.feature);
 
-            //Create element for the wiki link
-            let wikiLink = document.createElement("a");
-            wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
-            wikiLink.target = "_blank";
-            wikiLink.textContent = "Click this link to load the Wikipedia Page";
+          //Create element for the wiki link
+          let wikiLink = document.createElement("a");
+          wikiLink.href = `https://${countryWikiResults.wikipediaUrl}`;
+          wikiLink.target = "_blank";
+          wikiLink.textContent = "Click this link to load the Wikipedia Page";
 
-            $("#wikiUrl").html(wikiLink);
+          $("#wikiUrl").html(wikiLink);
 
-            $("#wikiModal").modal("show");
-          } else {
-            console.log(result.status.code);
-            alert(
-              "Couldn't get Wikipedia information from the API, Error Code: " +
-                result.status.code
-            );
-          }
+          $("#wikiModal").modal("show");
         },
         error: function (jqXHR, textStatus, errorThrown) {
           console.log(
@@ -857,6 +849,12 @@ L.easyButton(
             jqXHR,
             textStatus,
             errorThrown
+          );
+          console.log(result);
+          console.log(result.status.code);
+          alert(
+            "Couldn't get Wikipedia information from the API, Error Code: " +
+              result.status.code
           );
         },
         complete: function () {

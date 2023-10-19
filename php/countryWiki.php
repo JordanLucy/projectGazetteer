@@ -1,30 +1,63 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-$countryCapital = $_REQUEST['countryCapital'];
-$countryCode = $_REQUEST['country'];
+class WikiAPI extends httpHelper
+{
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$url = "http://api.geonames.org/wikipediaSearchJSON?q=$countryCapital&countryCode=$countryCode&maxRows=10&username=flightltd&style=full";
-$curl = curl_init($url);
+    private function respond()
+    {
+        try {
 
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curl, CURLOPT_URL, $url);
+            $executionStartTime = microtime(true);
 
-$result = curl_exec($curl);
+            $countryCapital = $_REQUEST['countryCapital'];
 
-curl_close($curl);
+            $countryCode = $_REQUEST['country'];
 
-$countryWikiInfo = json_decode($result, true);
+            $url = "http://api.geonames.org/wikipediaSearchJSON?q=$countryCapital&countryCode=$countryCode&maxRows=10&username=flightltd&style=full";
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data'] = $countryWikiInfo;
+            $result = $this->curlRequest($url);
 
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
+            $data = json_decode($result['response'], true);
 
-echo json_encode($output);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
+
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => $data,
+                'message'      => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
+
+new WikiAPI();
+
+
+// $countryWikiInfo = json_decode($result, true);
+
+// $output['status']['code'] = "200";
+// $output['status']['name'] = "ok";
+// $output['status']['description'] = "success";
+// $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
+// $output['data'] = $countryWikiInfo;
+
+// header('Content-Type: application/json; charset=UTF-8');
+// header("Access-Control-Allow-Origin: *");
+
+// echo json_encode($output);
