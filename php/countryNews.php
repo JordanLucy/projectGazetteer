@@ -1,36 +1,49 @@
 <?php
 
-$executionStartTime = microtime(true);
+error_reporting(E_ALL);
+ini_set('display_errors#', 1);
 
-$countryNews = strtolower($_REQUEST['country']);
+require 'httpHelper.php';
 
-$apikey = "c5649483f58911253e679c7798c466f4";
+class NewsAPI extends httpHelper
+{
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$url = "https://gnews.io/api/v4/top-headlines?category=general&country=$countryNews&lang=en&apikey=$apikey";
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-$curl = curl_init($url);
+            $countryNews = strtolower($_REQUEST['country']);
 
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curl, CURLOPT_URL, $url);
+            $apikey = "c5649483f58911253e679c7798c466f4";
 
-//Set the User-Agent Header
-curl_setopt($curl, CURLOPT_USERAGENT, 'projectGazetteer/1.0');
+            $url = "https://gnews.io/api/v4/top-headlines?category=general&country=$countryNews&lang=en&apikey=$apikey";
 
-$result = curl_exec($curl);
+            $result = $this->curlRequest($url);
 
-curl_close($curl);
+            $data = json_decode($result['response'], true);
 
-$newsResults = json_decode($result, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data'] = $newsResults;
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => $data,
+                'message'     => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
 
-
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
-
-echo json_encode($output);
+new NewsAPI();

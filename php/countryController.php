@@ -3,20 +3,32 @@
 // if no get request we return all country names + iso 
 // if $_GET['iso'] then we return all border points for that country after searching through file data.
 
-class CountryController
+require 'httpHelper.php';
+
+class CountryController extends httpHelper
 {
+
     private array $data;
 
     function __construct()
     {
-        $this->data = $this->fetchFileData();
+        $executionStartTime = microtime(true);
+        try {
+            $this->data = $this->fetchFileData();
 
-        if (!empty($_GET['iso'])) {
-            $returnData = $this->fetchCountryBorderOnIso($_GET['iso']);
-        } else {
-            $returnData = $this->fetchAllCountryCodes();
+            if (!empty($_GET['iso'])) {
+                $returnData = $this->fetchCountryBorderOnIso($_GET['iso']);
+            } else {
+                $returnData = $this->fetchAllCountryCodes();
+            }
+            echo $this->generateResponse(['responseCode' => 200, 'data' => $returnData], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
         }
-        $this->returnData($returnData);
     }
 
     private function fetchFileData()
@@ -52,19 +64,6 @@ class CountryController
             $outputData[] = array('countryName' => $countryName, 'iso_a2' => $isoCode, 'iso_a3' => $isoCode3);
         }
         return $outputData; // Return the list of country codes
-    }
-
-    private function returnData($data)
-    {
-        $output['status']['code'] = "200";
-        $output['status']['name'] = "ok";
-        $output['status']['description'] = "success";
-        $output['data'] = $data;
-
-        header('Content-Type: application/json; charset=UTF-8');
-        header("Access-Control-Allow-Origin: *");
-
-        echo json_encode($output);
     }
 }
 

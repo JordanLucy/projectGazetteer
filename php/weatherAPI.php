@@ -13,11 +13,10 @@ class WeatherAPI extends httpHelper
 
     private function respond()
     {
+        $executionStartTime = microtime(true);
         try {
-            $executionStartTime = microtime(true);
 
             $latitude = $_REQUEST['lat'];
-
             $longitude = $_REQUEST['lon'];
 
             $key = "8adf76c6cca645df8dd120855231210";

@@ -131,7 +131,7 @@ function fetchAndUpdateMarkers() {
         $("#spinner").show();
       },
       success: function (result) {
-        // console.log("all the landmarks", result);
+        console.log("all the landmarks", result);
 
         cities.clearLayers();
         airports.clearLayers();
@@ -254,10 +254,10 @@ const fetchCountryList = () => {
 
 const fetchAndPopulateCountryList = () => {
   fetchCountryList()
-    .then((data) => {
-      // console.log("Fetch Country List Result: ", data);
-      if (data.status.code === "200" && data.data) {
-        populateCountryList(data.data); // Loop data into select via ID target
+    .then((result) => {
+      //console.log("Fetch Country List Result: ", result);
+      if (result.status.code === 200 && result.data.length > 0) {
+        populateCountryList(result.data); // Loop data into select via ID target
       } else {
         throw new Error("Unable to fetch country list");
       }
@@ -294,14 +294,14 @@ function fetchAndSetBorderData() {
       success: function (feature) {
         // console.log("Fetch Country Border Result: ", feature);
         if (feature) {
-          currentCountryIso3 = feature.properties.iso_a3;
+          currentCountryIso3 = feature.data.properties.iso_a3;
           // console.log("current iso a3: ", currentCountryIso3);
 
           // Clear previous country border if exists
           clearSelectedCountryBorder();
 
           // Display the country border on the map as a layer
-          selectedCountryBorder = L.geoJSON(feature, {
+          selectedCountryBorder = L.geoJSON(feature.data, {
             style: {
               color: "black",
               fillColor: "#E83151",

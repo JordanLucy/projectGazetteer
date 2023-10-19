@@ -1,40 +1,51 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-$usernameKey = "flightltd&style=full";
-$countryCode = $_REQUEST['country'];
+class InfoMarkersAPI extends httpHelper
+{
 
-$cityUrl = "http://api.geonames.org/searchJSON?country=$countryCode&cities=cities15000&username=$usernameKey";
-$airportUrl = "http://api.geonames.org/searchJSON?q=airport&country=$countryCode&username=$usernameKey";
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$curlCity = curl_init($cityUrl);
-$curlAirport = curl_init($airportUrl);
+    private function respond()
+    {
+        try {
 
-curl_setopt($curlCity, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curlCity, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curlCity, CURLOPT_URL, $cityUrl);
+            $executionStartTime = microtime(true);
 
-curl_setopt($curlAirport, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($curlAirport, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($curlAirport, CURLOPT_URL, $airportUrl);
+            $usernameKey = "flightltd&style=full";
+            $countryCode = $_REQUEST['country'];
 
-$resultCity = curl_exec($curlCity);
-$resultAiport = curl_exec($curlAirport);
+            $cityUrl = "http://api.geonames.org/searchJSON?country=$countryCode&cities=cities15000&username=$usernameKey";
+            $airportUrl = "http://api.geonames.org/searchJSON?q=airport&country=$countryCode&username=$usernameKey";
 
-curl_close($curlCity);
-curl_close($curlAirport);
+            $cityResult = $this->curlRequest($cityUrl);
+            $airportResult = $this->curlRequest($airportUrl);
 
-$cityData = json_decode($resultCity, true);
-$airportData = json_decode($resultAiport, true);
+            $cityData = json_decode($cityResult['response'], true);
+            $airportData = json_decode($airportResult['response'], true);
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data'] = ['cities' => $cityData, 'airports' => $airportData];
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
 
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
+            echo $this->generateResponse([
+                'responseCode' => $cityResult['code'],
+                'data'         => ['cities' => $cityData, 'airports' => $airportData],
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
 
-echo json_encode($output);
+new InfoMarkersAPI();

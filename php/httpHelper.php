@@ -5,6 +5,7 @@ class httpHelper
 
     public function curlRequest(string $url)
     {
+
         $curl = curl_init($url);
 
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -18,7 +19,7 @@ class httpHelper
         return ['code' => curl_getinfo($curl, CURLINFO_HTTP_CODE), 'response' => $result ?? null];
     }
 
-    public function generateResponse(array $curlResultData, $executionStartTime): string
+    public function generateResponse(array $curlResultData, string $executionStartTime): string
     {
         header('Content-Type: application/json; charset=UTF-8');
         header("Access-Control-Allow-Origin: *");

@@ -1,33 +1,49 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-$executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-$placeName = $_REQUEST["placeName"];
+class OpenCageAPI extends httpHelper
+{
 
-$apiKey = "be0aa5008ed74764a77721198258cbbb";
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-$url = "https://api.opencagedata.com/geocode/v1/json?q=$placeName&key=$apiKey";
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-$ch = curl_init($url);
+            $placeName = $_REQUEST["placeName"];
 
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_URL, $url);
+            $apiKey = "be0aa5008ed74764a77721198258cbbb";
 
-$result = curl_exec($ch);
+            $url = "https://api.opencagedata.com/geocode/v1/json?q=$placeName&key=$apiKey";
 
-curl_close($ch);
+            $result = $this->curlRequest($url);
 
-$decode = json_decode($result, true);
+            $data = json_decode($result['response'], true);
 
-$output['status']['code'] = "200";
-$output['status']['name'] = "ok";
-$output['status']['description'] = "success";
-$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-$output['data'] = $decode;
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
 
-header('Content-Type: application/json; charset=URF-8');
+            echo $this->generateResponse([
+                'responseCode' => $result['code'],
+                'data'         => $data,
+                'message'      => '',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
 
-header("Access-Control-Allow-Origin: *");
-
-echo json_encode($output);
+new OpenCageAPI();

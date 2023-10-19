@@ -1,16 +1,52 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-header('Content-Type: application/json; charset=UTF-8');
-header("Access-Control-Allow-Origin: *");
+require 'httpHelper.php';
 
-$isoCode = $_GET['iso']; // Get the ISO code from the query parameter
+class CountryBorderInformation extends httpHelper
+{
 
-$jsonData = json_decode(file_get_contents('../data/countryBorders.geo.json'), true);
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-foreach ($jsonData['features'] as $feature) {
-    if ($feature['properties']['iso_a2'] === $isoCode) {
-        $feature['iso_a3'] = $feature['properties']['iso_a3'];
-        echo json_encode($feature);
-        break;
+    private function respond()
+    {
+        $executionStartTime = microtime(true);
+        try {
+            $isoCode = $_GET['iso']; // Get the ISO code from the query parameter
+
+            $jsonData = json_decode(file_get_contents('../data/countryBorders.geo.json'), true);
+
+            $borderData = [];
+
+            foreach ($jsonData['features'] as $feature) {
+                if ($feature['properties']['iso_a2'] === $isoCode) {
+                    $feature['iso_a3'] = $feature['properties']['iso_a3'];
+                    $borderData = $feature;
+                    break;
+                }
+            }
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
+
+            echo $this->generateResponse([
+                'responseCode' => 200,
+                'data'         => $borderData,
+                'message'      => 'Success',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
     }
 }
+
+new CountryBorderInformation();

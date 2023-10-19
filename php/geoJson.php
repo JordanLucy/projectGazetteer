@@ -1,20 +1,43 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-    $executionStartTime = microtime(true);
+require 'httpHelper.php';
 
-    $result = file_get_contents('../data/countryBorders.geo.json');
+class GeoJson extends httpHelper
+{
 
-    $decodedData = json_decode($result,true);
+    public function __construct()
+    {
+        $this->respond();
+    }
 
-    $output['status']['code'] = "200";
-    $output['status']['name'] = "ok";
-    $output['status']['description'] = "success";
-    $output['status']['executedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
+    private function respond()
+    {
+        try {
+            $executionStartTime = microtime(true);
 
-    $output['data'] = $decodedData['features'];
-    
-    header('Content-Type: application/json; charset=URF-8');
-    header("Access-Control-Allow-Origin: *");
+            $result = file_get_contents('../data/countryBorders.geo.json');
 
-    echo json_encode($output);
-?>
+            $data = json_decode($result['response'], true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Error("none valid json returned");
+            }
+
+            echo $this->generateResponse([
+                'responseCode' => 200,
+                'data'         => $data['features'],
+                'message'      => 'Success',
+            ], $executionStartTime);
+        } catch (Exception $e) {
+            echo $this->generateResponse([
+                'responseCode' => 500,
+                'data'         => null,
+                'message'      => $e->getMessage(),
+            ], $executionStartTime);
+        }
+    }
+}
+
+new GeoJson();
